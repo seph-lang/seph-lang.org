@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chart>
+  <series>
+    <value xid="0">0c805876</value>
+    <value xid="1">b6e8e7cb</value>
+    <value xid="2">3c4ec844</value>
+    <value xid="3">ea4b8cbe</value>
+    <value xid="4">feeac561</value>
+    <value xid="5">be0a4e4c</value>
+    <value xid="6">496f4fb6</value>
+    <value xid="7">4cf7d18f</value>
+    <value xid="8">516adade</value>
+    <value xid="9">882c22b4</value>
+    <value xid="10">61431e9a</value>
+    <value xid="11">12e906d6</value>
+    <value xid="12">4402709a</value>
+    <value xid="13">d57cd587</value>
+    <value xid="14">45204641</value>
+    <value xid="15">f9f4a0f</value>
+    <value xid="16">eafaf25</value>
+    <value xid="17">264c113</value>
+    <value xid="18">1cd1a4f</value>
+  </series>
+  <graphs>
+    <graph gid="1" title="cell lookup: deep ancestor" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.164119</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">1.668008</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.805522</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.698851</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">1.544258</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">1.534563</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">1.499929</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">1.298945</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">1.313659</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">2.009132</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.688753</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">40.681395</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.439712</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">40.896426</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.921908</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.861066</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.868579</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.908897</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.960459</value>
+    </graph>
+    <graph gid="2" title="cell lookup: deep ancestor, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.035542</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">3.399731</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">4.003219</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">3.759595</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">3.364151</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">3.211009</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">3.14437</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">2.632576</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">3.370584</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">5.611279</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">44.168492</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">44.206744</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">45.347061</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">43.740956</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">4.614267</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">4.76937</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">4.56871</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">4.356033</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.67069</value>
+    </graph>
+    <graph gid="3" title="cell lookup: large, direct, early" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.128124</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">1.222793</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.681313</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.528673</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">1.083295</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">1.098396</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">1.073682</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0.945286</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">0.955104</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">1.617186</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.482662</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">40.624663</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.652736</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">41.126019</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.474097</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.466415</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.47284</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.563381</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.521247</value>
+    </graph>
+    <graph gid="4" title="cell lookup: large, direct, early, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.038727</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">3.762136</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">4.39387</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">3.942324</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">3.423727</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">3.342001</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">3.441805</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">2.808843</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">3.613204</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">6.011573</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">47.832329</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">49.422014</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">50.658338</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">47.738332</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">4.510943</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">4.557683</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">4.434249</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">4.487099</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.660268</value>
+    </graph>
+    <graph gid="5" title="cell lookup: large, direct, late" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.122669</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">1.236872</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.40994</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.251594</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">1.111526</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">1.120185</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">1.118894</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0.944405</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">0.961305</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">1.625357</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.318498</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">41.859594</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.498735</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">40.856558</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.48135</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.5065</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.472577</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.524286</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.557591</value>
+    </graph>
+    <graph gid="6" title="cell lookup: large, direct, late, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.039921</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">3.779371</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">4.361777</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">3.878203</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">3.403629</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">3.303281</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">3.433148</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">2.772187</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">3.708191</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">5.895771</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">47.654796</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">47.757303</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">48.398687</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">47.483698</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">4.542435</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">4.639743</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">4.449781</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">4.431857</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.731791</value>
+    </graph>
+    <graph gid="7" title="cell lookup: large, direct, mid" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.124901</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">1.228172</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.385982</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.250421</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">1.078116</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">1.10295</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">1.078551</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0.944768</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">0.969747</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">1.628435</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.351038</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">40.465511</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.384774</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">40.853881</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.485145</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.483634</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.504839</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.495581</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.540606</value>
+    </graph>
+    <graph gid="8" title="cell lookup: large, direct, mid, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.037683</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">3.774836</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">4.479202</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">3.887079</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">3.473702</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">3.33096</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">3.467339</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">2.80591</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">3.50424</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">6.08995</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">40.764621</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">41.020752</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">41.618273</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">41.29458</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">4.665055</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">4.724049</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">4.472491</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">4.405778</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.597761</value>
+    </graph>
+    <graph gid="9" title="cell lookup: medium, direct, early" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.108597</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">0.996614</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.42903</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.332464</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">0.884172</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">0.926104</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">0.986771</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0.750169</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">0.788103</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">1.446701</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.423447</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">41.475092</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.645446</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">44.51642</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.380088</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.335249</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.319269</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.331729</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.366174</value>
+    </graph>
+    <graph gid="10" title="cell lookup: medium, direct, early, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.030301</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">3.015768</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">3.470035</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">3.335311</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">2.840925</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">2.692973</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">2.779928</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">2.190846</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">3.078545</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">5.351968</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">46.995953</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">48.086458</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">47.75251</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">47.245987</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">4.066538</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">4.231393</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">4.289583</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">3.96812</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.204097</value>
+    </graph>
+    <graph gid="11" title="cell lookup: medium, direct, late" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.097702</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">0.982185</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.355742</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.306926</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">0.880728</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">0.952715</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">0.874373</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0.752957</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">0.762195</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">1.430504</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">1.301759</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">1.320548</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">1.429438</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">1.315772</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.307169</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.289402</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.312691</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.300964</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.325481</value>
+    </graph>
+    <graph gid="12" title="cell lookup: medium, direct, late, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.029773</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">2.900641</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">3.426168</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">3.331568</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">2.802009</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">2.749723</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">2.817002</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">2.198564</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">3.126452</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">5.41633</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">40.748222</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">41.853083</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.897895</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">41.461933</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">4.038955</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">4.073622</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">4.119816</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">4.080186</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.261929</value>
+    </graph>
+    <graph gid="13" title="cell lookup: small, direct, early" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.103593</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">0.882139</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">1.268016</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">1.256072</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">0.806</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">0.843709</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">0.823397</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0.684825</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">0.71352</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">1.44513</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.287346</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">40.589559</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.069885</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">41.201936</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">1.306838</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">1.259162</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">1.258632</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">1.277945</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">1.298407</value>
+    </graph>
+    <graph gid="14" title="cell lookup: small, direct, early, polymorphic" balloon_text="{value} sec">
+      <value xid="0" description=" seconds" url="https://github.com/seph-lang/seph/commit/0c805876">0.028113</value>
+      <value xid="1" description=" seconds" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">2.586138</value>
+      <value xid="2" description=" seconds" url="https://github.com/seph-lang/seph/commit/3c4ec844">3.081419</value>
+      <value xid="3" description=" seconds" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">2.959951</value>
+      <value xid="4" description=" seconds" url="https://github.com/seph-lang/seph/commit/feeac561">2.518482</value>
+      <value xid="5" description=" seconds" url="https://github.com/seph-lang/seph/commit/be0a4e4c">2.383848</value>
+      <value xid="6" description=" seconds" url="https://github.com/seph-lang/seph/commit/496f4fb6">2.590708</value>
+      <value xid="7" description=" seconds" url="https://github.com/seph-lang/seph/commit/4cf7d18f">1.994213</value>
+      <value xid="8" description=" seconds" url="https://github.com/seph-lang/seph/commit/516adade">2.72607</value>
+      <value xid="9" description=" seconds" url="https://github.com/seph-lang/seph/commit/882c22b4">4.785452</value>
+      <value xid="10" description=" seconds" url="https://github.com/seph-lang/seph/commit/61431e9a">41.066541</value>
+      <value xid="11" description=" seconds" url="https://github.com/seph-lang/seph/commit/12e906d6">40.564612</value>
+      <value xid="12" description=" seconds" url="https://github.com/seph-lang/seph/commit/4402709a">40.59996</value>
+      <value xid="13" description=" seconds" url="https://github.com/seph-lang/seph/commit/d57cd587">40.97553</value>
+      <value xid="14" description=" seconds" url="https://github.com/seph-lang/seph/commit/45204641">3.924161</value>
+      <value xid="15" description=" seconds" url="https://github.com/seph-lang/seph/commit/f9f4a0f">3.937481</value>
+      <value xid="16" description=" seconds" url="https://github.com/seph-lang/seph/commit/eafaf25">3.784702</value>
+      <value xid="17" description=" seconds" url="https://github.com/seph-lang/seph/commit/264c113">3.848356</value>
+      <value xid="18" description=" seconds" url="https://github.com/seph-lang/seph/commit/1cd1a4f">4.178574</value>
+    </graph>
+    <graph gid="1" title="revision" hidden="true" visible_in_legend="true" color="#FFFFFF" color_hover="#FFFFFF" selected="false">
+      <value xid="0" description="0c805876 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Fri Jun 17 10:22:54 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Add build/classes/main to the bootclasspath for benchmarks too" url="https://github.com/seph-lang/seph/commit/0c805876">0</value>
+      <value xid="1" description="b6e8e7cb &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Sun Jun 19 16:33:13 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Rebase benchmarks to be of a useful size" url="https://github.com/seph-lang/seph/commit/b6e8e7cb">0</value>
+      <value xid="2" description="3c4ec844 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Wed Jun 22 08:50:37 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Switch away from using bootclasspath for stuff" url="https://github.com/seph-lang/seph/commit/3c4ec844">0</value>
+      <value xid="3" description="ea4b8cbe &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Sat Jul 9 16:16:14 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Switch to using invokeExact instead of invoke in hope that I will get some performance improvements" url="https://github.com/seph-lang/seph/commit/ea4b8cbe">0</value>
+      <value xid="4" description="feeac561 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Mon Jul 18 23:18:08 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Missed one place to turn on bootclasspath. =/" url="https://github.com/seph-lang/seph/commit/feeac561">0</value>
+      <value xid="5" description="be0a4e4c &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Mon Jul 18 23:33:23 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Make -server default in the seph start script" url="https://github.com/seph-lang/seph/commit/be0a4e4c">0</value>
+      <value xid="6" description="496f4fb6 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Tue Jul 19 09:38:04 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Make it possible to turn off TCO" url="https://github.com/seph-lang/seph/commit/496f4fb6">0</value>
+      <value xid="7" description="4cf7d18f &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Mon Jul 25 16:42:03 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Do tail call pumping through invoke dynamic instead of by explicit bytecodes" url="https://github.com/seph-lang/seph/commit/4cf7d18f">0</value>
+      <value xid="8" description="516adade &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Tue Jul 26 11:05:30 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Extract generated activationFor method into an invokedynamic instruction" url="https://github.com/seph-lang/seph/commit/516adade">0</value>
+      <value xid="9" description="882c22b4 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Tue Jul 26 15:33:58 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Switch to using invoke dynamic for lexical variables too" url="https://github.com/seph-lang/seph/commit/882c22b4">0</value>
+      <value xid="10" description="61431e9a &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Wed Jul 27 17:26:17 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Remove findField from helpers and change tail lookup to not use field lookup" url="https://github.com/seph-lang/seph/commit/61431e9a">0</value>
+      <value xid="11" description="12e906d6 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Wed Jul 27 17:36:09 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Remove intrinsics in the compiler" url="https://github.com/seph-lang/seph/commit/12e906d6">0</value>
+      <value xid="12" description="4402709a &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Thu Jul 28 16:09:53 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Add a smaller test just for pushing the lexical things" url="https://github.com/seph-lang/seph/commit/4402709a">0</value>
+      <value xid="13" description="d57cd587 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Thu Jul 28 17:31:37 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Make it possible to control bytecode printing from the command line" url="https://github.com/seph-lang/seph/commit/d57cd587">0</value>
+      <value xid="14" description="45204641 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Fri Jul 29 11:31:28 2011 -0700&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Remove a bug I introduced for larger lexical scopes" url="https://github.com/seph-lang/seph/commit/45204641">0</value>
+      <value xid="15" description="f9f4a0f &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Sun Aug 21 17:42:09 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Add pieces for IBM, and also make sure to actually create seph.revision before using it. =/" url="https://github.com/seph-lang/seph/commit/f9f4a0f">0</value>
+      <value xid="16" description="eafaf25 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Sun Aug 21 18:57:13 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;One more try" url="https://github.com/seph-lang/seph/commit/eafaf25">0</value>
+      <value xid="17" description="264c113 &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Sun Aug 21 19:02:29 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Go back to dots instead of underscore" url="https://github.com/seph-lang/seph/commit/264c113">0</value>
+      <value xid="18" description="1cd1a4f &amp;nbsp;- &amp;nbsp;ola.bini@gmail.com&lt;br&gt;Thu Nov 10 09:54:31 2011 -0500&lt;br&gt;(click on chart for the changeset)&lt;br&gt;&lt;br&gt;Upgrade to final release of Asm 4.0" url="https://github.com/seph-lang/seph/commit/1cd1a4f">0</value>
+    </graph>
+  </graphs>
+  <labels> 
+    <label lid="0"> 
+      <y>40</y> 
+      <width>640</width> 
+      <text_size>16</text_size> 
+      <align>center</align> 
+      <text> 
+        <![CDATA[<b>Trunk - Best microbenchmark time - bench_read_cell.sp</b>]]>
+      </text>        
+    </label>    
+  </labels> 
+</chart>
