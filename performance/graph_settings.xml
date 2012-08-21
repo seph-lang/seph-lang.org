@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings> 
+ <digits_after_decimal>0</digits_after_decimal> 
+ <decimals_separator>.</decimals_separator> 
+ <thousands_separator>&lt;!-- --&gt;</thousands_separator> 
+ <add_time_stamp>true</add_time_stamp> 
+ <plot_area> 
+  <margins> 
+   <left>46</left> 
+   <top>80</top> 
+   <right>20</right> 
+   <bottom>320</bottom> 
+  </margins> 
+ </plot_area> 
+ <balloon> 
+  <on_off>false</on_off> 
+ </balloon>    
+ <legend> 
+  <width>640</width> 
+  <values> 
+   <enabled>true</enabled> 
+   <width>520</width> 
+   <align>left</align> 
+   <text><![CDATA[{description}]]></text> 
+  </values> 
+ </legend> 
+ <context_menu> 
+  <default_items> 
+   <zoom>false</zoom> 
+   <print>false</print> 
+  </default_items> 
+ </context_menu>  
+ <graphs> 
+  <graph gid="1"> 
+   <axis>left</axis> 
+   <color>#999999</color> 
+   <bullet>round</bullet> 
+   <bullet_alpha>0</bullet_alpha> 
+   <selected>true</selected>                     
+  </graph> 
+  <graph gid="2"> 
+   <axis>left</axis> 
+   <color>#FFCC00</color> 
+   <bullet>round</bullet> 
+   <bullet_alpha>0</bullet_alpha> 
+   <selected>true</selected>                     
+  </graph> 
+ </graphs> 
+</settings> 

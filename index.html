@@ -1,0 +1,148 @@
+<!DOCTYPE html 
+PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>Seph</title>
+    <link rel="stylesheet" href="style/seph-style.css" type="text/css" media="screen" />
+  </head>
+  <body>
+    <div id="logo">
+      <a href="index.html">
+        <img src="img/sephLogo.png" alt="Seph Logo" width="230" height="109" border="0"/>
+      </a>
+    </div>
+
+    <div id="content">
+    <table cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td valign="top" style="background: #E6EEEE;">
+            <table cellpadding="0" cellspacing="0" border="0" id="menu">
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="http://seph-lang.org/wiki/index.php/News" class="unselectedMenuItem">News</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="index.html" class="selectedMenuItem">About Seph</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="download.html" class="unselectedMenuItem">Download</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="http://github.com/seph-lang/seph" class="unselectedMenuItem">Project page</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="http://ci.seph-lang.org" class="unselectedMenuItem">CI</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="http://seph-lang.org/wiki/index.php/Resources" class="unselectedMenuItem">Resources</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="http://seph-lang.org/wiki" class="unselectedMenuItem">Wiki</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+
+              <tr>
+                <td>
+                  <span class="menuItem">
+                    <a href="performance.html" class="unselectedMenuItem">Performance</a>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td style="height:.4em"></td>
+              </tr>
+            </table>
+        </td>
+        <td>
+          <table cellpadding="0" cellspacing="0" border="0" style="width:50em">
+            <tr>
+              <td style="width:10em"></td>
+              <td>
+                <pre class="code">
+<span style="color: #606060;">Seph:</span> <span style="color: #606060;">LanguageExperiment</span> <span style="color: #6495ed;">with</span>(
+  <span style="color: #7777d4;">goal:</span> (<span style="color: #7777d4;">:expressiveness</span>, <span style="color: #7777d4;">:concurrency</span>),
+  <span style="color: #7777d4;">features:</span> [  <span style="color: #7777d4;">:dynamic</span>,               <span style="color: #7777d4;">:homoiconic</span>,
+               <span style="color: #7777d4;">:functional</span>,            <span style="color: #7777d4;">:proper_tail_calls</span>,
+               <span style="color: #7777d4;">:prototype_based</span>,       <span style="color: #7777d4;">:object_orientation</span>,
+               <span style="color: #7777d4;">:light_weight_threads</span>,  <span style="color: #7777d4;">:parameterized_modules</span>],
+  <span style="color: #7777d4;">inspirations:</span> <span style="color: #449900;">set</span>(<span style="color: #606060;">Ioke</span>, <span style="color: #606060;">Clojure</span>, <span style="color: #606060;">Erlang</span>, <span style="color: #606060;">Newspeak</span>)
+),
+
+<span style="color: #32465A;">the_greeting</span> <span style="color: #00bfff;">=</span> <span style="color: #0050a0;">"Avant, "</span>
+<span style="color: #32465A;">Greeter</span> <span style="color: #00bfff;">=</span> <span style="color: #7777d4;">Something</span> <span style="color: #6495ed;">with</span>(
+  <span style="color: #7777d4;">greet:</span> <span style="color: #006666;">#</span>(<span style="color: #0050a0;">"</span><span style="color: #449900;">#{the_greeting}</span><span style="color: #0050a0;"> </span><span style="color: #449900;">#{subject}</span><span style="color: #0050a0;">"</span> <span style="color: #449900;">println</span>)
+)
+
+<span style="color: #606060;">Seph</span> inspirations select(
+  features include?(<span style="color: #7777d4;">:object_oriented</span>)
+) each(inspiration,
+  <span style="color: #606060;">Greeter</span> <span style="color: #6495ed;">with</span>(<span style="color: #7777d4;">subject:</span> inspiration) greet
+)</pre>
+
+                <!-- BODY -->
+
+
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    </div>
+  </body>
+</html>
