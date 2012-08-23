@@ -61,7 +61,7 @@ $wgDBtype           = "mysql";
 $wgDBserver         = "localhost";
 $wgDBname           = "wikidb";
 $wgDBuser           = "wikiuser";
-$wgDBpassword       = "d34tRuct1on";
+$wgDBpassword       = "WIKI_DB_PASSWORD";
 
 # MySQL specific settings
 $wgDBprefix         = "seph_";
@@ -131,4 +131,3 @@ require_once("extensions/Mygma.php");
 $wgGroupPermissions['*']['edit'] = false;
 
 $wgSpamRegex = "/\<.*style.*?(display|position|overflow|visibility|height)\s*:.*?>/i";
-
