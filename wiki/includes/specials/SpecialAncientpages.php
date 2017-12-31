@@ -1,60 +1,93 @@
 <?php
 /**
+ * Implements Special:Ancientpages
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
  * @file
  * @ingroup SpecialPage
  */
 
 /**
  * Implements Special:Ancientpages
+ *
  * @ingroup SpecialPage
  */
 class AncientPagesPage extends QueryPage {
 
-	function getName() {
-		return "Ancientpages";
+	function __construct( $name = 'Ancientpages' ) {
+		parent::__construct( $name );
 	}
 
-	function isExpensive() {
+	public function isExpensive() {
 		return true;
 	}
 
-	function isSyndicated() { return false; }
+	function isSyndicated() {
+		return false;
+	}
 
-	function getSQL() {
-		global $wgDBtype;
-		$db = wfGetDB( DB_SLAVE );
-		$page = $db->tableName( 'page' );
-		$revision = $db->tableName( 'revision' );
-		$epoch = $wgDBtype == 'mysql' ? 'UNIX_TIMESTAMP(rev_timestamp)' :
-			'EXTRACT(epoch FROM rev_timestamp)';
-		return
-			"SELECT 'Ancientpages' as type,
-					page_namespace as namespace,
-			        page_title as title,
-			        $epoch as value
-			FROM $page, $revision
-			WHERE page_namespace=".NS_MAIN." AND page_is_redirect=0
-			  AND page_latest=rev_id";
+	public function getQueryInfo() {
+		return [
+			'tables' => [ 'page', 'revision' ],
+			'fields' => [
+				'namespace' => 'page_namespace',
+				'title' => 'page_title',
+				'value' => 'rev_timestamp'
+			],
+			'conds' => [
+				'page_namespace' => MWNamespace::getContentNamespaces(),
+				'page_is_redirect' => 0,
+				'page_latest=rev_id'
+			]
+		];
+	}
+
+	public function usesTimestamps() {
+		return true;
 	}
 
 	function sortDescending() {
 		return false;
 	}
 
-	function formatResult( $skin, $result ) {
-		global $wgLang, $wgContLang;
-
-		$d = $wgLang->timeanddate( wfTimestamp( TS_MW, $result->value ), true );
-		$title = Title::makeTitle( $result->namespace, $result->title );
-		$link = $skin->makeKnownLinkObj( $title, htmlspecialchars( $wgContLang->convert( $title->getPrefixedText() ) ) );
-		return wfSpecialList($link, $d);
+	public function preprocessResults( $db, $res ) {
+		$this->executeLBFromResultWrapper( $res );
 	}
-}
 
-function wfSpecialAncientpages() {
-	list( $limit, $offset ) = wfCheckLimits();
+	/**
+	 * @param Skin $skin
+	 * @param object $result Result row
+	 * @return string
+	 */
+	function formatResult( $skin, $result ) {
+		global $wgContLang;
 
-	$app = new AncientPagesPage();
+		$d = $this->getLanguage()->userTimeAndDate( $result->value, $this->getUser() );
+		$title = Title::makeTitle( $result->namespace, $result->title );
+		$linkRenderer = $this->getLinkRenderer();
+		$link = $linkRenderer->makeKnownLink(
+			$title,
+			$wgContLang->convert( $title->getPrefixedText() )
+		);
 
-	$app->doQuery( $offset, $limit );
+		return $this->getLanguage()->specialList( $link, htmlspecialchars( $d ) );
+	}
+
+	protected function getGroupName() {
+		return 'maintenance';
+	}
 }

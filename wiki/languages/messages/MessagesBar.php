@@ -1,111 +1,49 @@
 <?php
 /** Bavarian (Boarisch)
  *
+ * To improve a translation please visit https://translatewiki.net
+ *
  * @ingroup Language
  * @file
  *
- * @author Malafaya
  */
 
 $fallback = 'de';
 
-$messages = array(
-'about'    => 'Üba',
-'mypage'   => 'Eigne Seitn',
-'mytalk'   => 'Eigne Diskussion',
-'anontalk' => 'Diskussionsseitn vo dera IP',
+$namespaceNames = [
+	NS_MEDIA            => 'Media',
+	NS_SPECIAL          => 'Spezial',
+	NS_TALK             => 'Dischkrian',
+	NS_USER             => 'Nutza',
+	NS_USER_TALK        => 'Nutza_Dischkrian',
+	NS_PROJECT_TALK     => '$1_Dischkrian',
+	NS_FILE             => 'Datei',
+	NS_FILE_TALK        => 'Datei_Dischkrian',
+	NS_MEDIAWIKI        => 'MediaWiki',
+	NS_MEDIAWIKI_TALK   => 'MediaWiki_Dischkrian',
+	NS_TEMPLATE         => 'Vorlog',
+	NS_TEMPLATE_TALK    => 'Vorlog_Dischkrian',
+	NS_HELP             => 'Huif',
+	NS_HELP_TALK        => 'Huif_Dischkrian',
+	NS_CATEGORY         => 'Kategorie',
+	NS_CATEGORY_TALK    => 'Kategorie_Dischkrian',
+];
 
-'edit'              => 'werkln',
-'delete'            => 'löschn',
-'unprotect'         => 'freigem',
-'unprotectthispage' => 'Schutz aufhem',
-'talk'              => 'bschprecha',
+$namespaceAliases = [
+	# German namespaces
+	'Medium'               => NS_MEDIA,
+	'Diskussion'           => NS_TALK,
+	'Benutzer'             => NS_USER,
+	'Benutzer_Diskussion'  => NS_USER_TALK,
+	'$1_Diskussion'        => NS_PROJECT_TALK,
+	'Datei_Diskussion'     => NS_FILE_TALK,
+	'MediaWiki_Diskussion' => NS_MEDIAWIKI_TALK,
+	'Vorlage'              => NS_TEMPLATE,
+	'Vorlage_Diskussion'   => NS_TEMPLATE_TALK,
+	'Hilfe'                => NS_HELP,
+	'Hilfe_Diskussion'     => NS_HELP_TALK,
+	'Kategorie_Diskussion' => NS_CATEGORY_TALK,
+];
 
-# All link text and link target definitions of links into project namespace that get used by other message strings, with the exception of user group pages (see grouppage) and the disambiguation template definition (see disambiguations).
-'aboutsite'            => 'Üba {{SITENAME}}',
-'aboutpage'            => 'Project:Üba_{{SITENAME}}',
-'mainpage'             => 'Hauptsaitn',
-'mainpage-description' => 'Hauptsaitn',
-
-'youhavenewmessagesmulti' => 'Sie ham neie Nachrichten: $1',
-
-# General errors
-'filedeleteerror' => 'De Datei „$1“ håt net glöscht wern kinna.',
-
-# Login and logout pages
-'yourname'                   => 'Benutzernam:',
-'yourdomainname'             => 'Eanane Domain:',
-'notloggedin'                => 'Net ogmeldt',
-'yourrealname'               => 'Echter Nam:',
-'yourlanguage'               => 'Sprache vo da Benutzeroberfläche:',
-'wrongpassword'              => "Des Passwort is falsch (oda fehlt). Bitte probier's no amoi.",
-'wrongpasswordempty'         => 'Des eigemne Passwort is laar gwen. Bitte no amoi probiern.',
-'acct_creation_throttle_hit' => 'Du hosst scho $1 Benutzakonten und kinnan iatzat koane mehr oleng.',
-'accountcreated'             => 'Benutzerkonto is erstellt worn',
-'accountcreatedtext'         => "'s Benutzerkonto $1 is eigricht worn.",
-
-# Edit pages
-'watchthis'          => 'De Seitn beobachtn',
-'whitelistedittitle' => 'Zum Bearbatn miaßn Sie si oomeidn',
-'whitelistedittext'  => 'Sie miaßn si $1, um Seiten bearbatn zum kinna.',
-'accmailtitle'       => 'Passwort is vaschickt worn',
-'newarticle'         => '(Nei)',
-'yourtext'           => 'Eana Text',
-
-# History pages
-'histlast' => 'Neiste',
-
-# Preferences page
-'mypreferences' => 'Eistellunga',
-
-# Upload
-'watchthisupload' => 'De Seitn beobachtn',
-
-# Miscellaneous special pages
-'newpages'     => 'Neie Seitn',
-'ancientpages' => 'Scho länger nimma bearbate Artikel',
-'move'         => 'vaschiam',
-
-# Special:Log
-'all-logs-page' => 'Alle Logbiacha',
-
-# Special:AllPages
-'allpages'          => 'Alle Seitn',
-'allarticles'       => 'Alle Seitn',
-'allinnamespace'    => 'Alle Seitn (Namensraum: $1)',
-'allnotinnamespace' => 'Alle Seitn (net im $1 Namensraum)',
-'allpagesprev'      => 'Vorige',
-'allpagessubmit'    => 'Owendn',
-'allpagesprefix'    => 'Seitn zoagn mit Präfix:',
-
-# Watchlist
-'mywatchlist'       => 'Beobachtungslistn',
-'watchlistanontext' => 'Sie miaßn si $1, um Eanane Beobachtungslistn zum seng oda Einträge auf ihr zum bearbatn.',
-'watchnologin'      => 'Sie san net ogmeidt',
-'watchthispage'     => 'Seitn beobachtn',
-'unwatch'           => 'nimma beobachten',
-
-# Contributions
-'contributions' => 'Benutzerbeiträg',
-'mycontris'     => 'Eigene Beiträg',
-
-# What links here
-'whatlinkshere' => 'Links auf de Seitn',
-
-# Move page
-'move-page-legend' => 'Seitn vaschiam',
-'move-watch'       => 'De Seitn beobachten',
-'1movedto2'        => 'håt [[$1]] nåch [[$2]] verschom',
-'1movedto2_redir'  => 'håt [[$1]] nåch [[$2]] verschom und dabei a Weiterleitung überschriem',
-
-# Namespace 8 related
-'allmessagesname'     => 'Nam',
-'allmessagescurrent'  => 'Aktuella Text',
-'allmessagestext'     => 'Des is a Listn vo de MediaWiki-Systemtexte.
-Please visit [http://www.mediawiki.org/wiki/Localisation MediaWiki Localisation] and [http://translatewiki.net Betawiki] if you wish to contribute to the generic MediaWiki localisation.',
-'allmessagesmodified' => 'Nur geänderte zoagn',
-
-# Special:NewImages
-'newimages' => 'Neie Dateien',
-
-);
+// Remove German aliases
+$namespaceGenderAliases = [];

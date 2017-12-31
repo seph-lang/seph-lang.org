@@ -1,10 +1,10 @@
 <?php
-
-/*
- * Created on Sep 1, 2007
- * API for MediaWiki 1.8+
+/**
  *
- * Copyright (C) 2007 Roan Kattouw <Firstname>.<Lastname>@home.nl
+ *
+ * Created on Sep 1, 2007
+ *
+ * Copyright © 2007 Roan Kattouw "<Firstname>.<Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,134 +18,187 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
-
-if (!defined('MEDIAWIKI')) {
-	// Eclipse helper - will be ignored in production
-	require_once ("ApiBase.php");
-}
 
 /**
  * @ingroup API
  */
 class ApiProtect extends ApiBase {
-
-	public function __construct($main, $action) {
-		parent :: __construct($main, $action);
-	}
-
 	public function execute() {
-		global $wgUser;
-		$this->getMain()->requestWriteMode();
 		$params = $this->extractRequestParams();
 
-		$titleObj = NULL;
-		if(!isset($params['title']))
-			$this->dieUsageMsg(array('missingparam', 'title'));
-		if(!isset($params['token']))
-			$this->dieUsageMsg(array('missingparam', 'token'));
-		if(!isset($params['protections']) || empty($params['protections']))
-			$this->dieUsageMsg(array('missingparam', 'protections'));
+		$pageObj = $this->getTitleOrPageId( $params, 'fromdbmaster' );
+		$titleObj = $pageObj->getTitle();
 
-		if(!$wgUser->matchEditToken($params['token']))
-			$this->dieUsageMsg(array('sessionfailure'));
+		$this->checkTitleUserPermissions( $titleObj, 'protect' );
 
-		$titleObj = Title::newFromText($params['title']);
-		if(!$titleObj)
-			$this->dieUsageMsg(array('invalidtitle', $params['title']));
+		$user = $this->getUser();
+		$tags = $params['tags'];
 
-		$errors = $titleObj->getUserPermissionsErrors('protect', $wgUser);
-		if(!empty($errors))
-			// We don't care about multiple errors, just report one of them
-			$this->dieUsageMsg(current($errors));
-
-		if(in_array($params['expiry'], array('infinite', 'indefinite', 'never')))
-			$expiry = Block::infinity();
-		else
-		{
-			$expiry = strtotime($params['expiry']);
-			if($expiry < 0 || $expiry == false)
-				$this->dieUsageMsg(array('invalidexpiry'));
-
-			$expiry = wfTimestamp(TS_MW, $expiry);
-			if($expiry < wfTimestampNow())
-				$this->dieUsageMsg(array('pastexpiry'));
+		// Check if user can add tags
+		if ( !is_null( $tags ) ) {
+			$ableToTag = ChangeTags::canAddTagsAccompanyingChange( $tags, $user );
+			if ( !$ableToTag->isOK() ) {
+				$this->dieStatus( $ableToTag );
+			}
 		}
 
-		$protections = array();
-		foreach($params['protections'] as $prot)
-		{
-			$p = explode('=', $prot);
-			$protections[$p[0]] = ($p[1] == 'all' ? '' : $p[1]);
-			if($titleObj->exists() && $p[0] == 'create')
-				$this->dieUsageMsg(array('create-titleexists'));
-			if(!$titleObj->exists() && $p[0] != 'create')
-				$this->dieUsageMsg(array('missingtitles-createonly'));
+		$expiry = (array)$params['expiry'];
+		if ( count( $expiry ) != count( $params['protections'] ) ) {
+			if ( count( $expiry ) == 1 ) {
+				$expiry = array_fill( 0, count( $params['protections'] ), $expiry[0] );
+			} else {
+				$this->dieWithError( [
+					'apierror-toofewexpiries',
+					count( $expiry ),
+					count( $params['protections'] )
+				] );
+			}
 		}
 
-		if($titleObj->exists()) {
-			$articleObj = new Article($titleObj);
-			$ok = $articleObj->updateRestrictions($protections, $params['reason'], $params['cascade'], $expiry);
-		} else
-			$ok = $titleObj->updateTitleProtection($protections['create'], $params['reason'], $expiry);
-		if(!$ok)
-			// This is very weird. Maybe the article was deleted or the user was blocked/desysopped in the meantime?
-			// Just throw an unknown error in this case, as it's very likely to be a race condition
-			$this->dieUsageMsg(array());
-		$res = array('title' => $titleObj->getPrefixedText(), 'reason' => $params['reason']);
-		if($expiry == Block::infinity())
-			$res['expiry'] = 'infinity';
-		else
-			$res['expiry'] = wfTimestamp(TS_ISO_8601, $expiry);
+		$restrictionTypes = $titleObj->getRestrictionTypes();
 
-		if($params['cascade'])
-			$res['cascade'] = '';
-		$res['protections'] = $protections;
-		$this->getResult()->addValue(null, $this->getModuleName(), $res);
+		$protections = [];
+		$expiryarray = [];
+		$resultProtections = [];
+		foreach ( $params['protections'] as $i => $prot ) {
+			$p = explode( '=', $prot );
+			$protections[$p[0]] = ( $p[1] == 'all' ? '' : $p[1] );
+
+			if ( $titleObj->exists() && $p[0] == 'create' ) {
+				$this->dieWithError( 'apierror-create-titleexists' );
+			}
+			if ( !$titleObj->exists() && $p[0] != 'create' ) {
+				$this->dieWithError( 'apierror-missingtitle-createonly' );
+			}
+
+			if ( !in_array( $p[0], $restrictionTypes ) && $p[0] != 'create' ) {
+				$this->dieWithError( [ 'apierror-protect-invalidaction', wfEscapeWikiText( $p[0] ) ] );
+			}
+			if ( !in_array( $p[1], $this->getConfig()->get( 'RestrictionLevels' ) ) && $p[1] != 'all' ) {
+				$this->dieWithError( [ 'apierror-protect-invalidlevel', wfEscapeWikiText( $p[1] ) ] );
+			}
+
+			if ( wfIsInfinity( $expiry[$i] ) ) {
+				$expiryarray[$p[0]] = 'infinity';
+			} else {
+				$exp = strtotime( $expiry[$i] );
+				if ( $exp < 0 || !$exp ) {
+					$this->dieWithError( [ 'apierror-invalidexpiry', wfEscapeWikiText( $expiry[$i] ) ] );
+				}
+
+				$exp = wfTimestamp( TS_MW, $exp );
+				if ( $exp < wfTimestampNow() ) {
+					$this->dieWithError( [ 'apierror-pastexpiry', wfEscapeWikiText( $expiry[$i] ) ] );
+				}
+				$expiryarray[$p[0]] = $exp;
+			}
+			$resultProtections[] = [
+				$p[0] => $protections[$p[0]],
+				'expiry' => ApiResult::formatExpiry( $expiryarray[$p[0]], 'infinite' ),
+			];
+		}
+
+		$cascade = $params['cascade'];
+
+		$watch = $params['watch'] ? 'watch' : $params['watchlist'];
+		$this->setWatch( $watch, $titleObj, 'watchdefault' );
+
+		$status = $pageObj->doUpdateRestrictions(
+			$protections,
+			$expiryarray,
+			$cascade,
+			$params['reason'],
+			$user,
+			$tags
+		);
+
+		if ( !$status->isOK() ) {
+			$this->dieStatus( $status );
+		}
+		$res = [
+			'title' => $titleObj->getPrefixedText(),
+			'reason' => $params['reason']
+		];
+		if ( $cascade ) {
+			$res['cascade'] = true;
+		}
+		$res['protections'] = $resultProtections;
+		$result = $this->getResult();
+		ApiResult::setIndexedTagName( $res['protections'], 'protection' );
+		$result->addValue( null, $this->getModuleName(), $res );
 	}
 
-	public function mustBePosted() { return true; }
+	public function mustBePosted() {
+		return true;
+	}
+
+	public function isWriteMode() {
+		return true;
+	}
 
 	public function getAllowedParams() {
-		return array (
-			'title' => null,
-			'token' => null,
-			'protections' => array(
-				ApiBase :: PARAM_ISMULTI => true
-			),
-			'expiry' => 'infinite',
+		return [
+			'title' => [
+				ApiBase::PARAM_TYPE => 'string',
+			],
+			'pageid' => [
+				ApiBase::PARAM_TYPE => 'integer',
+			],
+			'protections' => [
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_REQUIRED => true,
+			],
+			'expiry' => [
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_ALLOW_DUPLICATES => true,
+				ApiBase::PARAM_DFLT => 'infinite',
+			],
 			'reason' => '',
-			'cascade' => false
-		);
+			'tags' => [
+				ApiBase::PARAM_TYPE => 'tags',
+				ApiBase::PARAM_ISMULTI => true,
+			],
+			'cascade' => false,
+			'watch' => [
+				ApiBase::PARAM_DFLT => false,
+				ApiBase::PARAM_DEPRECATED => true,
+			],
+			'watchlist' => [
+				ApiBase::PARAM_DFLT => 'preferences',
+				ApiBase::PARAM_TYPE => [
+					'watch',
+					'unwatch',
+					'preferences',
+					'nochange'
+				],
+			],
+		];
 	}
 
-	public function getParamDescription() {
-		return array (
-			'title' => 'Title of the page you want to restore.',
-			'token' => 'A protect token previously retrieved through prop=info',
-			'protections' => 'Pipe-separated list of protection levels, formatted action=group (e.g. edit=sysop)',
-			'expiry' => 'Expiry timestamp. If set to \'infinite\', \'indefinite\' or \'never\', the protection will never expire.',
-			'reason' => 'Reason for (un)protecting (optional)',
-			'cascade' => 'Enable cascading protection (i.e. protect pages included in this page)'
-		);
+	public function needsToken() {
+		return 'csrf';
 	}
 
-	public function getDescription() {
-		return array(
-			'Change the protection level of a page.'
-		);
+	protected function getExamplesMessages() {
+		return [
+			'action=protect&title=Main%20Page&token=123ABC&' .
+				'protections=edit=sysop|move=sysop&cascade=&expiry=20070901163000|never'
+				=> 'apihelp-protect-example-protect',
+			'action=protect&title=Main%20Page&token=123ABC&' .
+				'protections=edit=all|move=all&reason=Lifting%20restrictions'
+				=> 'apihelp-protect-example-unprotect',
+			'action=protect&title=Main%20Page&token=123ABC&' .
+				'protections=&reason=Lifting%20restrictions'
+				=> 'apihelp-protect-example-unprotect2',
+		];
 	}
 
-	protected function getExamples() {
-		return array (
-			'api.php?action=protect&title=Main%20Page&token=123ABC&protections=edit=sysop|move=sysop&cascade&expiry=20070901163000',
-			'api.php?action=protect&title=Main%20Page&token=123ABC&protections=edit=all|move=all&reason=Lifting%20restrictions'
-		);
-	}
-
-	public function getVersion() {
-		return __CLASS__ . ': $Id: ApiProtect.php 35098 2008-05-20 17:13:28Z ialex $';
+	public function getHelpUrls() {
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Protect';
 	}
 }

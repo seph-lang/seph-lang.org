@@ -1,211 +1,230 @@
 <?php
 /**
+ * Implements Special:Newimages
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
  * @file
  * @ingroup SpecialPage
- * FIXME: this code is crap, should use Pager and Database::select().
  */
 
-/**
- *
- */
-function wfSpecialNewimages( $par, $specialPage ) {
-	global $wgUser, $wgOut, $wgLang, $wgRequest, $wgGroupPermissions, $wgMiserMode;
+class SpecialNewFiles extends IncludableSpecialPage {
+	/** @var FormOptions */
+	protected $opts;
 
-	$wpIlMatch = $wgRequest->getText( 'wpIlMatch' );
-	$dbr = wfGetDB( DB_SLAVE );
-	$sk = $wgUser->getSkin();
-	$shownav = !$specialPage->including();
-	$hidebots = $wgRequest->getBool('hidebots',1);
+	/** @var string[] */
+	protected $mediaTypes;
 
-	$hidebotsql = '';
-	if ($hidebots) {
+	public function __construct() {
+		parent::__construct( 'Newimages' );
+	}
 
-		/** Make a list of group names which have the 'bot' flag
-		    set.
-		*/
-		$botconds=array();
-		foreach ($wgGroupPermissions as $groupname=>$perms) {
-			if(array_key_exists('bot',$perms) && $perms['bot']) {
-				$botconds[]="ug_group='$groupname'";
-			}
+	public function execute( $par ) {
+		$context = new DerivativeContext( $this->getContext() );
+
+		$this->setHeaders();
+		$this->outputHeader();
+		$mimeAnalyzer = MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer();
+		$this->mediaTypes = $mimeAnalyzer->getMediaTypes();
+
+		$out = $this->getOutput();
+		$this->addHelpLink( 'Help:New images' );
+
+		$opts = new FormOptions();
+
+		$opts->add( 'like', '' );
+		$opts->add( 'user', '' );
+		$opts->add( 'showbots', false );
+		$opts->add( 'newbies', false );
+		$opts->add( 'hidepatrolled', false );
+		$opts->add( 'mediatype', $this->mediaTypes );
+		$opts->add( 'limit', 50 );
+		$opts->add( 'offset', '' );
+		$opts->add( 'start', '' );
+		$opts->add( 'end', '' );
+
+		$opts->fetchValuesFromRequest( $this->getRequest() );
+
+		if ( $par !== null ) {
+			$opts->setValue( is_numeric( $par ) ? 'limit' : 'like', $par );
 		}
 
-		/* If not bot groups, do not set $hidebotsql */
-		if ($botconds) {
-			$isbotmember=$dbr->makeList($botconds, LIST_OR);
+		// If start date comes after end date chronologically, swap them.
+		// They are swapped in the interface by JS.
+		$start = $opts->getValue( 'start' );
+		$end = $opts->getValue( 'end' );
+		if ( $start !== '' && $end !== '' && $start > $end ) {
+			$temp = $end;
+			$end = $start;
+			$start = $temp;
 
-			/** This join, in conjunction with WHERE ug_group
-			    IS NULL, returns only those rows from IMAGE
-		    	where the uploading user is not a member of
-		    	a group which has the 'bot' permission set.
-			*/
-			$ug = $dbr->tableName('user_groups');
-			$hidebotsql = " LEFT OUTER JOIN $ug ON img_user=ug_user AND ($isbotmember)";
+			$opts->setValue( 'start', $start, true );
+			$opts->setValue( 'end', $end, true );
+
+			// also swap values in request object, which is used by HTMLForm
+			// to pre-populate the fields with the previous input
+			$request = $context->getRequest();
+			$context->setRequest( new DerivativeRequest(
+				$request,
+				[ 'start' => $start, 'end' => $end ] + $request->getValues(),
+				$request->wasPosted()
+			) );
+		}
+
+		// if all media types have been selected, wipe out the array to prevent
+		// the pointless IN(...) query condition (which would have no effect
+		// because every possible type has been selected)
+		$missingMediaTypes = array_diff( $this->mediaTypes, $opts->getValue( 'mediatype' ) );
+		if ( empty( $missingMediaTypes ) ) {
+			$opts->setValue( 'mediatype', [] );
+		}
+
+		$opts->validateIntBounds( 'limit', 0, 500 );
+
+		$this->opts = $opts;
+
+		if ( !$this->including() ) {
+			$this->setTopText();
+			$this->buildForm( $context );
+		}
+
+		$pager = new NewFilesPager( $context, $opts );
+
+		$out->addHTML( $pager->getBody() );
+		if ( !$this->including() ) {
+			$out->addHTML( $pager->getNavigationBar() );
 		}
 	}
 
-	$image = $dbr->tableName('image');
+	protected function buildForm( IContextSource $context ) {
+		$mediaTypesText = array_map( function ( $type ) {
+			// mediastatistics-header-unknown, mediastatistics-header-bitmap,
+			// mediastatistics-header-drawing, mediastatistics-header-audio,
+			// mediastatistics-header-video, mediastatistics-header-multimedia,
+			// mediastatistics-header-office, mediastatistics-header-text,
+			// mediastatistics-header-executable, mediastatistics-header-archive,
+			// mediastatistics-header-3d,
+			return $this->msg( 'mediastatistics-header-' . strtolower( $type ) )->text();
+		}, $this->mediaTypes );
+		$mediaTypesOptions = array_combine( $mediaTypesText, $this->mediaTypes );
+		ksort( $mediaTypesOptions );
 
-	$sql="SELECT img_timestamp from $image";
-	if ($hidebotsql) {
-		$sql .= "$hidebotsql WHERE ug_group IS NULL";
-	}
-	$sql.=' ORDER BY img_timestamp DESC LIMIT 1';
-	$res = $dbr->query($sql, 'wfSpecialNewImages');
-	$row = $dbr->fetchRow($res);
-	if($row!==false) {
-		$ts=$row[0];
-	} else {
-		$ts=false;
-	}
-	$dbr->freeResult($res);
-	$sql='';
+		$formDescriptor = [
+			'like' => [
+				'type' => 'text',
+				'label-message' => 'newimages-label',
+				'name' => 'like',
+			],
 
-	/** If we were clever, we'd use this to cache. */
-	$latestTimestamp = wfTimestamp( TS_MW, $ts);
+			'user' => [
+				'type' => 'text',
+				'label-message' => 'newimages-user',
+				'name' => 'user',
+			],
 
-	/** Hardcode this for now. */
-	$limit = 48;
+			'newbies' => [
+				'type' => 'check',
+				'label-message' => 'newimages-newbies',
+				'name' => 'newbies',
+			],
 
-	if ( $parval = intval( $par ) ) {
-		if ( $parval <= $limit && $parval > 0 ) {
-			$limit = $parval;
+			'showbots' => [
+				'type' => 'check',
+				'label-message' => 'newimages-showbots',
+				'name' => 'showbots',
+			],
+
+			'hidepatrolled' => [
+				'type' => 'check',
+				'label-message' => 'newimages-hidepatrolled',
+				'name' => 'hidepatrolled',
+			],
+
+			'mediatype' => [
+				'type' => 'multiselect',
+				'flatlist' => true,
+				'name' => 'mediatype',
+				'label-message' => 'newimages-mediatype',
+				'options' => $mediaTypesOptions,
+				'default' => $this->mediaTypes,
+			],
+
+			'limit' => [
+				'type' => 'hidden',
+				'default' => $this->opts->getValue( 'limit' ),
+				'name' => 'limit',
+			],
+
+			'offset' => [
+				'type' => 'hidden',
+				'default' => $this->opts->getValue( 'offset' ),
+				'name' => 'offset',
+			],
+
+			'start' => [
+				'type' => 'date',
+				'label-message' => 'date-range-from',
+				'name' => 'start',
+			],
+
+			'end' => [
+				'type' => 'date',
+				'label-message' => 'date-range-to',
+				'name' => 'end',
+			],
+		];
+
+		if ( $this->getConfig()->get( 'MiserMode' ) ) {
+			unset( $formDescriptor['like'] );
 		}
-	}
 
-	$where = array();
-	$searchpar = '';
-	if ( $wpIlMatch != '' && !$wgMiserMode) {
-		$nt = Title::newFromUrl( $wpIlMatch );
-		if($nt ) {
-			$m = $dbr->strencode( strtolower( $nt->getDBkey() ) );
-			$m = str_replace( '%', "\\%", $m );
-			$m = str_replace( '_', "\\_", $m );
-			$where[] = "LOWER(img_name) LIKE '%{$m}%'";
-			$searchpar = '&wpIlMatch=' . urlencode( $wpIlMatch );
+		if ( !$this->getUser()->useFilePatrol() ) {
+			unset( $formDescriptor['hidepatrolled'] );
 		}
+
+		HTMLForm::factory( 'ooui', $formDescriptor, $context )
+			// For the 'multiselect' field values to be preserved on submit
+			->setFormIdentifier( 'specialnewimages' )
+			->setWrapperLegendMsg( 'newimages-legend' )
+			->setSubmitTextMsg( 'ilsubmit' )
+			->setMethod( 'get' )
+			->prepareForm()
+			->displayForm( false );
 	}
 
-	$invertSort = false;
-	if( $until = $wgRequest->getVal( 'until' ) ) {
-		$where[] = "img_timestamp < '" . $dbr->timestamp( $until ) . "'";
+	protected function getGroupName() {
+		return 'changes';
 	}
-	if( $from = $wgRequest->getVal( 'from' ) ) {
-		$where[] = "img_timestamp >= '" . $dbr->timestamp( $from ) . "'";
-		$invertSort = true;
-	}
-	$sql='SELECT img_size, img_name, img_user, img_user_text,'.
-	     "img_description,img_timestamp FROM $image";
-
-	if($hidebotsql) {
-		$sql .= $hidebotsql;
-		$where[]='ug_group IS NULL';
-	}
-	if(count($where)) {
-		$sql.=' WHERE '.$dbr->makeList($where, LIST_AND);
-	}
-	$sql.=' ORDER BY img_timestamp '. ( $invertSort ? '' : ' DESC' );
-	$sql.=' LIMIT '.($limit+1);
-	$res = $dbr->query($sql, 'wfSpecialNewImages');
 
 	/**
-	 * We have to flip things around to get the last N after a certain date
+	 * Send the text to be displayed above the options
 	 */
-	$images = array();
-	while ( $s = $dbr->fetchObject( $res ) ) {
-		if( $invertSort ) {
-			array_unshift( $images, $s );
-		} else {
-			array_push( $images, $s );
+	function setTopText() {
+		global $wgContLang;
+
+		$message = $this->msg( 'newimagestext' )->inContentLanguage();
+		if ( !$message->isDisabled() ) {
+			$this->getOutput()->addWikiText(
+				Html::rawElement( 'p',
+					[ 'lang' => $wgContLang->getHtmlCode(), 'dir' => $wgContLang->getDir() ],
+					"\n" . $message->plain() . "\n"
+				),
+				/* $lineStart */ false,
+				/* $interface */ false
+			);
 		}
-	}
-	$dbr->freeResult( $res );
-
-	$gallery = new ImageGallery();
-	$firstTimestamp = null;
-	$lastTimestamp = null;
-	$shownImages = 0;
-	foreach( $images as $s ) {
-		if( ++$shownImages > $limit ) {
-			# One extra just to test for whether to show a page link;
-			# don't actually show it.
-			break;
-		}
-
-		$name = $s->img_name;
-		$ut = $s->img_user_text;
-
-		$nt = Title::newFromText( $name, NS_IMAGE );
-		$ul = $sk->makeLinkObj( Title::makeTitle( NS_USER, $ut ), $ut );
-
-		$gallery->add( $nt, "$ul<br />\n<i>".$wgLang->timeanddate( $s->img_timestamp, true )."</i><br />\n" );
-
-		$timestamp = wfTimestamp( TS_MW, $s->img_timestamp );
-		if( empty( $firstTimestamp ) ) {
-			$firstTimestamp = $timestamp;
-		}
-		$lastTimestamp = $timestamp;
-	}
-
-	$bydate = wfMsg( 'bydate' );
-	$lt = $wgLang->formatNum( min( $shownImages, $limit ) );
-	if ($shownav) {
-		$text = wfMsgExt( 'imagelisttext', array('parse'), $lt, $bydate );
-		$wgOut->addHTML( $text . "\n" );
-	}
-
-	$sub = wfMsg( 'ilsubmit' );
-	$titleObj = SpecialPage::getTitleFor( 'Newimages' );
-	$action = $titleObj->escapeLocalURL( $hidebots ? '' : 'hidebots=0' );
-	if ($shownav && !$wgMiserMode) {
-		$wgOut->addHTML( "<form id=\"imagesearch\" method=\"post\" action=\"" .
-		  "{$action}\">" .
-			Xml::input( 'wpIlMatch', 20, $wpIlMatch ) . ' ' .
-		  Xml::submitButton( $sub, array( 'name' => 'wpIlSubmit' ) ) .
-		  "</form>" );
-	}
-
-	/**
-	 * Paging controls...
-	 */
-
-	# If we change bot visibility, this needs to be carried along.
-	if(!$hidebots) {
-		$botpar='&hidebots=0';
-	} else {
-		$botpar='';
-	}
-	$now = wfTimestampNow();
-	$d = $wgLang->date( $now, true );
-	$t = $wgLang->time( $now, true );
-	$dateLink = $sk->makeKnownLinkObj( $titleObj, wfMsgHtml( 'sp-newimages-showfrom', $d, $t ), 
-		'from='.$now.$botpar.$searchpar );
-
-	$botLink = $sk->makeKnownLinkObj($titleObj, wfMsgHtml( 'showhidebots', 
-		($hidebots ? wfMsgHtml('show') : wfMsgHtml('hide'))),'hidebots='.($hidebots ? '0' : '1').$searchpar);
-
-
-	$opts = array( 'parsemag', 'escapenoentities' );
-	$prevLink = wfMsgExt( 'prevn', $opts, $wgLang->formatNum( $limit ) );
-	if( $firstTimestamp && $firstTimestamp != $latestTimestamp ) {
-		$prevLink = $sk->makeKnownLinkObj( $titleObj, $prevLink, 'from=' . $firstTimestamp . $botpar . $searchpar );
-	}
-
-	$nextLink = wfMsgExt( 'nextn', $opts, $wgLang->formatNum( $limit ) );
-	if( $shownImages > $limit && $lastTimestamp ) {
-		$nextLink = $sk->makeKnownLinkObj( $titleObj, $nextLink, 'until=' . $lastTimestamp.$botpar.$searchpar );
-	}
-
-	$prevnext = '<p>' . $botLink . ' '. wfMsgHtml( 'viewprevnext', $prevLink, $nextLink, $dateLink ) .'</p>';
-
-	if ($shownav)
-		$wgOut->addHTML( $prevnext );
-
-	if( count( $images ) ) {
-		$wgOut->addHTML( $gallery->toHTML() );
-		if ($shownav)
-			$wgOut->addHTML( $prevnext );
-	} else {
-		$wgOut->addWikiMsg( 'noimages' );
 	}
 }

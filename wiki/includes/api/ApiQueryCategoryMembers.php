@@ -1,11 +1,10 @@
 <?php
-
-/*
+/**
+ *
+ *
  * Created on June 14, 2007
  *
- * API for MediaWiki 1.8+
- *
- * Copyright (C) 2006 Yuri Astrakhan <Firstname><Lastname>@gmail.com
+ * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +18,11 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
-
-if (!defined('MEDIAWIKI')) {
-	// Eclipse helper - will be ignored in production
-	require_once ("ApiQueryBase.php");
-}
 
 /**
  * A query module to enumerate pages that belong to a category.
@@ -35,228 +31,366 @@ if (!defined('MEDIAWIKI')) {
  */
 class ApiQueryCategoryMembers extends ApiQueryGeneratorBase {
 
-	public function __construct($query, $moduleName) {
-		parent :: __construct($query, $moduleName, 'cm');
+	public function __construct( ApiQuery $query, $moduleName ) {
+		parent::__construct( $query, $moduleName, 'cm' );
 	}
 
 	public function execute() {
 		$this->run();
 	}
 
-	public function executeGenerator($resultPageSet) {
-		$this->run($resultPageSet);
+	public function getCacheMode( $params ) {
+		return 'public';
 	}
 
-	private function run($resultPageSet = null) {
-
-		$params = $this->extractRequestParams();
-
-		if ( !isset($params['title']) || is_null($params['title']) )
-			$this->dieUsage("The cmtitle parameter is required", 'notitle');
-		$categoryTitle = Title::newFromText($params['title']);
-
-		if ( is_null( $categoryTitle ) || $categoryTitle->getNamespace() != NS_CATEGORY )
-			$this->dieUsage("The category name you entered is not valid", 'invalidcategory');
-
-		$prop = array_flip($params['prop']);
-		$fld_ids = isset($prop['ids']);
-		$fld_title = isset($prop['title']);
-		$fld_sortkey = isset($prop['sortkey']);
-		$fld_timestamp = isset($prop['timestamp']);
-
-		if (is_null($resultPageSet)) {
-			$this->addFields(array('cl_from', 'cl_sortkey', 'page_namespace', 'page_title'));
-			$this->addFieldsIf('page_id', $fld_ids);
-		} else {
-			$this->addFields($resultPageSet->getPageTableFields()); // will include page_ id, ns, title
-			$this->addFields(array('cl_from', 'cl_sortkey'));
-		}
-
-		$this->addFieldsIf('cl_timestamp', $fld_timestamp || $params['sort'] == 'timestamp');
-		$this->addTables(array('page','categorylinks'));	// must be in this order for 'USE INDEX'
-									// Not needed after bug 10280 is applied to servers
-		if($params['sort'] == 'timestamp')
-		{
-			$this->addOption('USE INDEX', 'cl_timestamp');
-			// cl_timestamp will be added by addWhereRange() later
-			$this->addOption('ORDER BY', 'cl_to');
-		}
-		else
-		{
-			$dir = ($params['dir'] == 'desc' ? ' DESC' : '');
-			$this->addOption('USE INDEX', 'cl_sortkey');
-			$this->addOption('ORDER BY', 'cl_to, cl_sortkey' . $dir . ', cl_from' . $dir);
-		}
-
-		$this->addWhere('cl_from=page_id');
-		$this->setContinuation($params['continue'], $params['dir']);
-		$this->addWhereFld('cl_to', $categoryTitle->getDBkey());
-		$this->addWhereFld('page_namespace', $params['namespace']);
-		if($params['sort'] == 'timestamp')
-			$this->addWhereRange('cl_timestamp', ($params['dir'] == 'asc' ? 'newer' : 'older'), $params['start'], $params['end']);
-
-		$limit = $params['limit'];
-		$this->addOption('LIMIT', $limit +1);
-
-		$db = $this->getDB();
-
-		$data = array ();
-		$count = 0;
-		$lastSortKey = null;
-		$res = $this->select(__METHOD__);
-		while ($row = $db->fetchObject($res)) {
-			if (++ $count > $limit) {
-				// We've reached the one extra which shows that there are additional pages to be had. Stop here...
-				// TODO: Security issue - if the user has no right to view next title, it will still be shown
-				if ($params['sort'] == 'timestamp')
-					$this->setContinueEnumParameter('start', wfTimestamp(TS_ISO_8601, $row->cl_timestamp));
-				else
-					$this->setContinueEnumParameter('continue', $this->getContinueStr($row, $lastSortKey));
-				break;
-			}
-
-			$lastSortKey = $row->cl_sortkey;	// detect duplicate sortkeys
-
-			if (is_null($resultPageSet)) {
-				$vals = array();
-				if ($fld_ids)
-					$vals['pageid'] = intval($row->page_id);
-				if ($fld_title) {
-					$title = Title :: makeTitle($row->page_namespace, $row->page_title);
-					$vals['ns'] = intval($title->getNamespace());
-					$vals['title'] = $title->getPrefixedText();
-				}
-				if ($fld_sortkey)
-					$vals['sortkey'] = $row->cl_sortkey;
-				if ($fld_timestamp)
-					$vals['timestamp'] = wfTimestamp(TS_ISO_8601, $row->cl_timestamp);
-				$data[] = $vals;
-			} else {
-				$resultPageSet->processDbRow($row);
-			}
-		}
-		$db->freeResult($res);
-
-		if (is_null($resultPageSet)) {
-			$this->getResult()->setIndexedTagName($data, 'cm');
-			$this->getResult()->addValue('query', $this->getModuleName(), $data);
-		}
-	}
-
-	private function getContinueStr($row, $lastSortKey) {
-		$ret = $row->cl_sortkey . '|';
-		if ($row->cl_sortkey == $lastSortKey)	// duplicate sort key, add cl_from
-			$ret .= $row->cl_from;
-		return $ret;
+	public function executeGenerator( $resultPageSet ) {
+		$this->run( $resultPageSet );
 	}
 
 	/**
-	 * Add DB WHERE clause to continue previous query based on 'continue' parameter
+	 * @param string $hexSortkey
+	 * @return bool
 	 */
-	private function setContinuation($continue, $dir) {
-		if (is_null($continue))
-			return;	// This is not a continuation request
+	private function validateHexSortkey( $hexSortkey ) {
+		// A hex sortkey has an unbound number of 2 letter pairs
+		return (bool)preg_match( '/^(?:[a-fA-F0-9]{2})*$/D', $hexSortkey );
+	}
 
-		$continueList = explode('|', $continue);
-		$hasError = count($continueList) != 2;
-		$from = 0;
-		if (!$hasError && strlen($continueList[1]) > 0) {
-			$from = intval($continueList[1]);
-			$hasError = ($from == 0);
+	/**
+	 * @param ApiPageSet $resultPageSet
+	 * @return void
+	 */
+	private function run( $resultPageSet = null ) {
+		$params = $this->extractRequestParams();
+
+		$categoryTitle = $this->getTitleOrPageId( $params )->getTitle();
+		if ( $categoryTitle->getNamespace() != NS_CATEGORY ) {
+			$this->dieWithError( 'apierror-invalidcategory' );
 		}
 
-		if ($hasError)
-			$this->dieUsage("Invalid continue param. You should pass the original value returned by the previous query", "badcontinue");
+		$prop = array_flip( $params['prop'] );
+		$fld_ids = isset( $prop['ids'] );
+		$fld_title = isset( $prop['title'] );
+		$fld_sortkey = isset( $prop['sortkey'] );
+		$fld_sortkeyprefix = isset( $prop['sortkeyprefix'] );
+		$fld_timestamp = isset( $prop['timestamp'] );
+		$fld_type = isset( $prop['type'] );
 
-		$encSortKey = $this->getDB()->addQuotes($continueList[0]);
-		$encFrom = $this->getDB()->addQuotes($from);
-		
-		$op = ($dir == 'desc' ? '<' : '>');
-
-		if ($from != 0) {
-			// Duplicate sort key continue
-			$this->addWhere( "cl_sortkey$op$encSortKey OR (cl_sortkey=$encSortKey AND cl_from$op=$encFrom)" );
+		if ( is_null( $resultPageSet ) ) {
+			$this->addFields( [ 'cl_from', 'cl_sortkey', 'cl_type', 'page_namespace', 'page_title' ] );
+			$this->addFieldsIf( 'page_id', $fld_ids );
+			$this->addFieldsIf( 'cl_sortkey_prefix', $fld_sortkeyprefix );
 		} else {
-			$this->addWhere( "cl_sortkey$op=$encSortKey" );
+			$this->addFields( $resultPageSet->getPageTableFields() ); // will include page_ id, ns, title
+			$this->addFields( [ 'cl_from', 'cl_sortkey', 'cl_type' ] );
+		}
+
+		$this->addFieldsIf( 'cl_timestamp', $fld_timestamp || $params['sort'] == 'timestamp' );
+
+		$this->addTables( [ 'page', 'categorylinks' ] ); // must be in this order for 'USE INDEX'
+
+		$this->addWhereFld( 'cl_to', $categoryTitle->getDBkey() );
+		$queryTypes = $params['type'];
+		$contWhere = false;
+
+		// Scanning large datasets for rare categories sucks, and I already told
+		// how to have efficient subcategory access :-) ~~~~ (oh well, domas)
+		$miser_ns = [];
+		if ( $this->getConfig()->get( 'MiserMode' ) ) {
+			$miser_ns = $params['namespace'];
+		} else {
+			$this->addWhereFld( 'page_namespace', $params['namespace'] );
+		}
+
+		$dir = in_array( $params['dir'], [ 'asc', 'ascending', 'newer' ] ) ? 'newer' : 'older';
+
+		if ( $params['sort'] == 'timestamp' ) {
+			$this->addTimestampWhereRange( 'cl_timestamp',
+				$dir,
+				$params['start'],
+				$params['end'] );
+			// Include in ORDER BY for uniqueness
+			$this->addWhereRange( 'cl_from', $dir, null, null );
+
+			if ( !is_null( $params['continue'] ) ) {
+				$cont = explode( '|', $params['continue'] );
+				$this->dieContinueUsageIf( count( $cont ) != 2 );
+				$op = ( $dir === 'newer' ? '>' : '<' );
+				$db = $this->getDB();
+				$continueTimestamp = $db->addQuotes( $db->timestamp( $cont[0] ) );
+				$continueFrom = (int)$cont[1];
+				$this->dieContinueUsageIf( $continueFrom != $cont[1] );
+				$this->addWhere( "cl_timestamp $op $continueTimestamp OR " .
+					"(cl_timestamp = $continueTimestamp AND " .
+					"cl_from $op= $continueFrom)"
+				);
+			}
+
+			$this->addOption( 'USE INDEX', 'cl_timestamp' );
+		} else {
+			if ( $params['continue'] ) {
+				$cont = explode( '|', $params['continue'], 3 );
+				$this->dieContinueUsageIf( count( $cont ) != 3 );
+
+				// Remove the types to skip from $queryTypes
+				$contTypeIndex = array_search( $cont[0], $queryTypes );
+				$queryTypes = array_slice( $queryTypes, $contTypeIndex );
+
+				// Add a WHERE clause for sortkey and from
+				$this->dieContinueUsageIf( !$this->validateHexSortkey( $cont[1] ) );
+				$escSortkey = $this->getDB()->addQuotes( hex2bin( $cont[1] ) );
+				$from = intval( $cont[2] );
+				$op = $dir == 'newer' ? '>' : '<';
+				// $contWhere is used further down
+				$contWhere = "cl_sortkey $op $escSortkey OR " .
+					"(cl_sortkey = $escSortkey AND " .
+					"cl_from $op= $from)";
+				// The below produces ORDER BY cl_sortkey, cl_from, possibly with DESC added to each of them
+				$this->addWhereRange( 'cl_sortkey', $dir, null, null );
+				$this->addWhereRange( 'cl_from', $dir, null, null );
+			} else {
+				if ( $params['startsortkeyprefix'] !== null ) {
+					$startsortkey = Collation::singleton()->getSortKey( $params['startsortkeyprefix'] );
+				} elseif ( $params['starthexsortkey'] !== null ) {
+					if ( !$this->validateHexSortkey( $params['starthexsortkey'] ) ) {
+						$encParamName = $this->encodeParamName( 'starthexsortkey' );
+						$this->dieWithError( [ 'apierror-badparameter', $encParamName ], "badvalue_$encParamName" );
+					}
+					$startsortkey = hex2bin( $params['starthexsortkey'] );
+				} else {
+					$startsortkey = $params['startsortkey'];
+				}
+				if ( $params['endsortkeyprefix'] !== null ) {
+					$endsortkey = Collation::singleton()->getSortKey( $params['endsortkeyprefix'] );
+				} elseif ( $params['endhexsortkey'] !== null ) {
+					if ( !$this->validateHexSortkey( $params['endhexsortkey'] ) ) {
+						$encParamName = $this->encodeParamName( 'endhexsortkey' );
+						$this->dieWithError( [ 'apierror-badparameter', $encParamName ], "badvalue_$encParamName" );
+					}
+					$endsortkey = hex2bin( $params['endhexsortkey'] );
+				} else {
+					$endsortkey = $params['endsortkey'];
+				}
+
+				// The below produces ORDER BY cl_sortkey, cl_from, possibly with DESC added to each of them
+				$this->addWhereRange( 'cl_sortkey',
+					$dir,
+					$startsortkey,
+					$endsortkey );
+				$this->addWhereRange( 'cl_from', $dir, null, null );
+			}
+			$this->addOption( 'USE INDEX', 'cl_sortkey' );
+		}
+
+		$this->addWhere( 'cl_from=page_id' );
+
+		$limit = $params['limit'];
+		$this->addOption( 'LIMIT', $limit + 1 );
+
+		if ( $params['sort'] == 'sortkey' ) {
+			// Run a separate SELECT query for each value of cl_type.
+			// This is needed because cl_type is an enum, and MySQL has
+			// inconsistencies between ORDER BY cl_type and
+			// WHERE cl_type >= 'foo' making proper paging impossible
+			// and unindexed.
+			$rows = [];
+			$first = true;
+			foreach ( $queryTypes as $type ) {
+				$extraConds = [ 'cl_type' => $type ];
+				if ( $first && $contWhere ) {
+					// Continuation condition. Only added to the
+					// first query, otherwise we'll skip things
+					$extraConds[] = $contWhere;
+				}
+				$res = $this->select( __METHOD__, [ 'where' => $extraConds ] );
+				$rows = array_merge( $rows, iterator_to_array( $res ) );
+				if ( count( $rows ) >= $limit + 1 ) {
+					break;
+				}
+				$first = false;
+			}
+		} else {
+			// Sorting by timestamp
+			// No need to worry about per-type queries because we
+			// aren't sorting or filtering by type anyway
+			$res = $this->select( __METHOD__ );
+			$rows = iterator_to_array( $res );
+		}
+
+		$result = $this->getResult();
+		$count = 0;
+		foreach ( $rows as $row ) {
+			if ( ++$count > $limit ) {
+				// We've reached the one extra which shows that there are
+				// additional pages to be had. Stop here...
+				// @todo Security issue - if the user has no right to view next
+				// title, it will still be shown
+				if ( $params['sort'] == 'timestamp' ) {
+					$this->setContinueEnumParameter( 'continue', "$row->cl_timestamp|$row->cl_from" );
+				} else {
+					$sortkey = bin2hex( $row->cl_sortkey );
+					$this->setContinueEnumParameter( 'continue',
+						"{$row->cl_type}|$sortkey|{$row->cl_from}"
+					);
+				}
+				break;
+			}
+
+			// Since domas won't tell anyone what he told long ago, apply
+			// cmnamespace here. This means the query may return 0 actual
+			// results, but on the other hand it could save returning 5000
+			// useless results to the client. ~~~~
+			if ( count( $miser_ns ) && !in_array( $row->page_namespace, $miser_ns ) ) {
+				continue;
+			}
+
+			if ( is_null( $resultPageSet ) ) {
+				$vals = [
+					ApiResult::META_TYPE => 'assoc',
+				];
+				if ( $fld_ids ) {
+					$vals['pageid'] = intval( $row->page_id );
+				}
+				if ( $fld_title ) {
+					$title = Title::makeTitle( $row->page_namespace, $row->page_title );
+					ApiQueryBase::addTitleInfo( $vals, $title );
+				}
+				if ( $fld_sortkey ) {
+					$vals['sortkey'] = bin2hex( $row->cl_sortkey );
+				}
+				if ( $fld_sortkeyprefix ) {
+					$vals['sortkeyprefix'] = $row->cl_sortkey_prefix;
+				}
+				if ( $fld_type ) {
+					$vals['type'] = $row->cl_type;
+				}
+				if ( $fld_timestamp ) {
+					$vals['timestamp'] = wfTimestamp( TS_ISO_8601, $row->cl_timestamp );
+				}
+				$fit = $result->addValue( [ 'query', $this->getModuleName() ],
+					null, $vals );
+				if ( !$fit ) {
+					if ( $params['sort'] == 'timestamp' ) {
+						$this->setContinueEnumParameter( 'continue', "$row->cl_timestamp|$row->cl_from" );
+					} else {
+						$sortkey = bin2hex( $row->cl_sortkey );
+						$this->setContinueEnumParameter( 'continue',
+							"{$row->cl_type}|$sortkey|{$row->cl_from}"
+						);
+					}
+					break;
+				}
+			} else {
+				$resultPageSet->processDbRow( $row );
+			}
+		}
+
+		if ( is_null( $resultPageSet ) ) {
+			$result->addIndexedTagName(
+				[ 'query', $this->getModuleName() ], 'cm' );
 		}
 	}
 
 	public function getAllowedParams() {
-		return array (
-			'title' => null,
-			'prop' => array (
-				ApiBase :: PARAM_DFLT => 'ids|title',
-				ApiBase :: PARAM_ISMULTI => true,
-				ApiBase :: PARAM_TYPE => array (
+		$ret = [
+			'title' => [
+				ApiBase::PARAM_TYPE => 'string',
+			],
+			'pageid' => [
+				ApiBase::PARAM_TYPE => 'integer'
+			],
+			'prop' => [
+				ApiBase::PARAM_DFLT => 'ids|title',
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_TYPE => [
 					'ids',
 					'title',
 					'sortkey',
+					'sortkeyprefix',
+					'type',
 					'timestamp',
-				)
-			),
-			'namespace' => array (
-				ApiBase :: PARAM_ISMULTI => true,
-				ApiBase :: PARAM_TYPE => 'namespace',
-			),
-			'continue' => null,
-			'limit' => array (
-				ApiBase :: PARAM_TYPE => 'limit',
-				ApiBase :: PARAM_DFLT => 10,
-				ApiBase :: PARAM_MIN => 1,
-				ApiBase :: PARAM_MAX => ApiBase :: LIMIT_BIG1,
-				ApiBase :: PARAM_MAX2 => ApiBase :: LIMIT_BIG2
-			),
-			'sort' => array(
-				ApiBase :: PARAM_DFLT => 'sortkey',
-				ApiBase :: PARAM_TYPE => array(
+				],
+				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+			],
+			'namespace' => [
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_TYPE => 'namespace',
+			],
+			'type' => [
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_DFLT => 'page|subcat|file',
+				ApiBase::PARAM_TYPE => [
+					'page',
+					'subcat',
+					'file'
+				]
+			],
+			'continue' => [
+				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+			],
+			'limit' => [
+				ApiBase::PARAM_TYPE => 'limit',
+				ApiBase::PARAM_DFLT => 10,
+				ApiBase::PARAM_MIN => 1,
+				ApiBase::PARAM_MAX => ApiBase::LIMIT_BIG1,
+				ApiBase::PARAM_MAX2 => ApiBase::LIMIT_BIG2
+			],
+			'sort' => [
+				ApiBase::PARAM_DFLT => 'sortkey',
+				ApiBase::PARAM_TYPE => [
 					'sortkey',
 					'timestamp'
-				)
-			),
-			'dir' => array(
-				ApiBase :: PARAM_DFLT => 'asc',
-				ApiBase :: PARAM_TYPE => array(
+				]
+			],
+			'dir' => [
+				ApiBase::PARAM_DFLT => 'ascending',
+				ApiBase::PARAM_TYPE => [
 					'asc',
-					'desc'
-				)
-			),
-			'start' => array(
-				ApiBase :: PARAM_TYPE => 'timestamp'
-			),
-			'end' => array(
-				ApiBase :: PARAM_TYPE => 'timestamp'
-			)
-		);
+					'desc',
+					// Normalising with other modules
+					'ascending',
+					'descending',
+					'newer',
+					'older',
+				]
+			],
+			'start' => [
+				ApiBase::PARAM_TYPE => 'timestamp'
+			],
+			'end' => [
+				ApiBase::PARAM_TYPE => 'timestamp'
+			],
+			'starthexsortkey' => null,
+			'endhexsortkey' => null,
+			'startsortkeyprefix' => null,
+			'endsortkeyprefix' => null,
+			'startsortkey' => [
+				ApiBase::PARAM_DEPRECATED => true,
+			],
+			'endsortkey' => [
+				ApiBase::PARAM_DEPRECATED => true,
+			],
+		];
+
+		if ( $this->getConfig()->get( 'MiserMode' ) ) {
+			$ret['namespace'][ApiBase::PARAM_HELP_MSG_APPEND] = [
+				'api-help-param-limited-in-miser-mode',
+			];
+		}
+
+		return $ret;
 	}
 
-	public function getParamDescription() {
-		return array (
-			'title' => 'Which category to enumerate (required). Must include Category: prefix',
-			'prop' => 'What pieces of information to include',
-			'namespace' => 'Only include pages in these namespaces',
-			'sort' => 'Property to sort by',
-			'dir' => 'In which direction to sort',
-			'start' => 'Timestamp to start listing from. Can only be used with cmsort=timestamp',
-			'end' => 'Timestamp to end listing at. Can only be used with cmsort=timestamp',
-			'continue' => 'For large categories, give the value retured from previous query',
-			'limit' => 'The maximum number of pages to return.',
-		);
+	protected function getExamplesMessages() {
+		return [
+			'action=query&list=categorymembers&cmtitle=Category:Physics'
+				=> 'apihelp-query+categorymembers-example-simple',
+			'action=query&generator=categorymembers&gcmtitle=Category:Physics&prop=info'
+				=> 'apihelp-query+categorymembers-example-generator',
+		];
 	}
 
-	public function getDescription() {
-		return 'List all pages in a given category';
-	}
-
-	protected function getExamples() {
-		return array (
-				"Get first 10 pages in [[Category:Physics]]:",
-				"  api.php?action=query&list=categorymembers&cmtitle=Category:Physics",
-				"Get page info about first 10 pages in [[Category:Physics]]:",
-				"  api.php?action=query&generator=categorymembers&gcmtitle=Category:Physics&prop=info",
-			);
-	}
-
-	public function getVersion() {
-		return __CLASS__ . ': $Id: ApiQueryCategoryMembers.php 35098 2008-05-20 17:13:28Z ialex $';
+	public function getHelpUrls() {
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Categorymembers';
 	}
 }

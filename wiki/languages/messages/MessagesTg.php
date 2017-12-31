@@ -1,5 +1,7 @@
 <?php
-/** Tajik (Тоҷикӣ/tojikī)
+/** Tajik (Тоҷикӣ)
+ *
+ * To improve a translation please visit https://translatewiki.net
  *
  * @ingroup Language
  * @file

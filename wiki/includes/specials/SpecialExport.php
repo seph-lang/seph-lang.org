@@ -1,284 +1,595 @@
 <?php
-# Copyright (C) 2003 Brion Vibber <brion@pobox.com>
-# http://www.mediawiki.org/
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-# http://www.gnu.org/copyleft/gpl.html
 /**
+ * Implements Special:Export
+ *
+ * Copyright © 2003-2008 Brion Vibber <brion@pobox.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
  * @file
  * @ingroup SpecialPage
  */
 
-function wfExportGetPagesFromCategory( $title ) {
-	global $wgContLang;
-
-	$name = $title->getDBkey();
-
-	$dbr = wfGetDB( DB_SLAVE );
-
-	list( $page, $categorylinks ) = $dbr->tableNamesN( 'page', 'categorylinks' );
-	$sql = "SELECT page_namespace, page_title FROM $page " .
-		"JOIN $categorylinks ON cl_from = page_id " .
-		"WHERE cl_to = " . $dbr->addQuotes( $name );
-
-	$pages = array();
-	$res = $dbr->query( $sql, 'wfExportGetPagesFromCategory' );
-	while ( $row = $dbr->fetchObject( $res ) ) {
-		$n = $row->page_title;
-		if ($row->page_namespace) {
-			$ns = $wgContLang->getNsText( $row->page_namespace );
-			$n = $ns . ':' . $n;
-		}
-
-		$pages[] = $n;
-	}
-	$dbr->freeResult($res);
-
-	return $pages;
-}
+use Mediawiki\MediaWikiServices;
 
 /**
- * Expand a list of pages to include templates used in those pages.
- * @param $inputPages array, list of titles to look up
- * @param $pageSet array, associative array indexed by titles for output
- * @return array associative array index by titles
- */
-function wfExportGetTemplates( $inputPages, $pageSet ) {
-	return wfExportGetLinks( $inputPages, $pageSet,
-		'templatelinks',
-	 	array( 'tl_namespace AS namespace', 'tl_title AS title' ),
-		array( 'page_id=tl_from' ) );
-}
-
-/**
- * Expand a list of pages to include images used in those pages.
- * @param $inputPages array, list of titles to look up
- * @param $pageSet array, associative array indexed by titles for output
- * @return array associative array index by titles
- */
-function wfExportGetImages( $inputPages, $pageSet ) {
-	return wfExportGetLinks( $inputPages, $pageSet,
-		'imagelinks',
-		array( NS_IMAGE . ' AS namespace', 'il_to AS title' ),
-		array( 'page_id=il_from' ) );
-}
-
-/**
- * Expand a list of pages to include items used in those pages.
- * @private
- */
-function wfExportGetLinks( $inputPages, $pageSet, $table, $fields, $join ) {
-	$dbr = wfGetDB( DB_SLAVE );
-	foreach( $inputPages as $page ) {
-		$title = Title::newFromText( $page );
-		if( $title ) {
-			$pageSet[$title->getPrefixedText()] = true;
-			/// @fixme May or may not be more efficient to batch these
-			///        by namespace when given multiple input pages.
-			$result = $dbr->select(
-				array( 'page', $table ),
-				$fields,
-				array_merge( $join,
-					array(
-						'page_namespace' => $title->getNamespace(),
-						'page_title' => $title->getDbKey() ) ),
-				__METHOD__ );
-			foreach( $result as $row ) {
-				$template = Title::makeTitle( $row->namespace, $row->title );
-				$pageSet[$template->getPrefixedText()] = true;
-			}
-		}
-	}
-	return $pageSet;
-}
-
-/**
- * Callback function to remove empty strings from the pages array.
- */
-function wfFilterPage( $page ) {
-	return $page !== '' && $page !== null;
-}
-
-/**
+ * A special page that allows users to export pages in a XML file
  *
+ * @ingroup SpecialPage
  */
-function wfSpecialExport( $page = '' ) {
-	global $wgOut, $wgRequest, $wgSitename, $wgExportAllowListContributors;
-	global $wgExportAllowHistory, $wgExportMaxHistory;
+class SpecialExport extends SpecialPage {
+	private $curonly, $doExport, $pageLinkDepth, $templates;
 
-	$curonly = true;
-	$doexport = false;
-
-	if ( $wgRequest->getCheck( 'addcat' ) ) {
-		$page = $wgRequest->getText( 'pages' );
-		$catname = $wgRequest->getText( 'catname' );
-
-		if ( $catname !== '' && $catname !== NULL && $catname !== false ) {
-			$t = Title::makeTitleSafe( NS_CATEGORY, $catname );
-			if ( $t ) {
-				/**
-				 * @fixme This can lead to hitting memory limit for very large
-				 * categories. Ideally we would do the lookup synchronously
-				 * during the export in a single query.
-				 */
-				$catpages = wfExportGetPagesFromCategory( $t );
-				if ( $catpages ) $page .= "\n" . implode( "\n", $catpages );
-			}
-		}
+	public function __construct() {
+		parent::__construct( 'Export' );
 	}
-	else if( $wgRequest->wasPosted() && $page == '' ) {
-		$page = $wgRequest->getText( 'pages' );
-		$curonly = $wgRequest->getCheck( 'curonly' );
-		$rawOffset = $wgRequest->getVal( 'offset' );
-		if( $rawOffset ) {
-			$offset = wfTimestamp( TS_MW, $rawOffset );
-		} else {
-			$offset = null;
-		}
-		$limit = $wgRequest->getInt( 'limit' );
-		$dir = $wgRequest->getVal( 'dir' );
-		$history = array(
-			'dir' => 'asc',
-			'offset' => false,
-			'limit' => $wgExportMaxHistory,
+
+	public function execute( $par ) {
+		$this->setHeaders();
+		$this->outputHeader();
+		$config = $this->getConfig();
+
+		// Set some variables
+		$this->curonly = true;
+		$this->doExport = false;
+		$request = $this->getRequest();
+		$this->templates = $request->getCheck( 'templates' );
+		$this->pageLinkDepth = $this->validateLinkDepth(
+			$request->getIntOrNull( 'pagelink-depth' )
 		);
-		$historyCheck = $wgRequest->getCheck( 'history' );
-		if ( $curonly ) {
-			$history = WikiExporter::CURRENT;
-		} elseif ( !$historyCheck ) {
-			if ( $limit > 0 && $limit < $wgExportMaxHistory ) {
-				$history['limit'] = $limit;
-			}
-			if ( !is_null( $offset ) ) {
-				$history['offset'] = $offset;
-			}
-			if ( strtolower( $dir ) == 'desc' ) {
-				$history['dir'] = 'desc';
-			}
-		}
+		$nsindex = '';
+		$exportall = false;
 
-		if( $page != '' ) $doexport = true;
-	} else {
-		// Default to current-only for GET requests
-		$page = $wgRequest->getText( 'pages', $page );
-		$historyCheck = $wgRequest->getCheck( 'history' );
-		if( $historyCheck ) {
-			$history = WikiExporter::FULL;
-		} else {
-			$history = WikiExporter::CURRENT;
-		}
+		if ( $request->getCheck( 'addcat' ) ) {
+			$page = $request->getText( 'pages' );
+			$catname = $request->getText( 'catname' );
 
-		if( $page != '' ) $doexport = true;
-	}
-
-	if( !$wgExportAllowHistory ) {
-		// Override
-		$history = WikiExporter::CURRENT;
-	}
-
-	$list_authors = $wgRequest->getCheck( 'listauthors' );
-	if ( !$curonly || !$wgExportAllowListContributors ) $list_authors = false ;
-
-	if ( $doexport ) {
-		$wgOut->disable();
-
-		// Cancel output buffering and gzipping if set
-		// This should provide safer streaming for pages with history
-		wfResetOutputBuffers();
-		header( "Content-type: application/xml; charset=utf-8" );
-		if( $wgRequest->getCheck( 'wpDownload' ) ) {
-			// Provide a sane filename suggestion
-			$filename = urlencode( $wgSitename . '-' . wfTimestampNow() . '.xml' );
-			$wgRequest->response()->header( "Content-disposition: attachment;filename={$filename}" );
-		}
-
-		/* Split up the input and look up linked pages */
-		$inputPages = array_filter( explode( "\n", $page ), 'wfFilterPage' );
-		$pageSet = array_flip( $inputPages );
-
-		if( $wgRequest->getCheck( 'templates' ) ) {
-			$pageSet = wfExportGetTemplates( $inputPages, $pageSet );
-		}
-
-		/*
-		// Enable this when we can do something useful exporting/importing image information. :)
-		if( $wgRequest->getCheck( 'images' ) ) {
-			$pageSet = wfExportGetImages( $inputPages, $pageSet );
-		}
-		*/
-
-		$pages = array_keys( $pageSet );
-
-		/* Ok, let's get to it... */
-
-		$db = wfGetDB( DB_SLAVE );
-		$exporter = new WikiExporter( $db, $history );
-		$exporter->list_authors = $list_authors ;
-		$exporter->openStream();
-
-		foreach( $pages as $page ) {
-			/*
-			if( $wgExportMaxHistory && !$curonly ) {
-				$title = Title::newFromText( $page );
-				if( $title ) {
-					$count = Revision::countByTitle( $db, $title );
-					if( $count > $wgExportMaxHistory ) {
-						wfDebug( __FUNCTION__ .
-							": Skipped $page, $count revisions too big\n" );
-						continue;
+			if ( $catname !== '' && $catname !== null && $catname !== false ) {
+				$t = Title::makeTitleSafe( NS_MAIN, $catname );
+				if ( $t ) {
+					/**
+					 * @todo FIXME: This can lead to hitting memory limit for very large
+					 * categories. Ideally we would do the lookup synchronously
+					 * during the export in a single query.
+					 */
+					$catpages = $this->getPagesFromCategory( $t );
+					if ( $catpages ) {
+						if ( $page !== '' ) {
+							$page .= "\n";
+						}
+						$page .= implode( "\n", $catpages );
 					}
 				}
-			}*/
+			}
+		} elseif ( $request->getCheck( 'addns' ) && $config->get( 'ExportFromNamespaces' ) ) {
+			$page = $request->getText( 'pages' );
+			$nsindex = $request->getText( 'nsindex', '' );
 
-			#Bug 8824: Only export pages the user can read
-			$title = Title::newFromText( $page );
-			if( is_null( $title ) ) continue; #TODO: perhaps output an <error> tag or something.
-			if( !$title->userCanRead() ) continue; #TODO: perhaps output an <error> tag or something.
+			if ( strval( $nsindex ) !== '' ) {
+				/**
+				 * Same implementation as above, so same @todo
+				 */
+				$nspages = $this->getPagesFromNamespace( $nsindex );
+				if ( $nspages ) {
+					$page .= "\n" . implode( "\n", $nspages );
+				}
+			}
+		} elseif ( $request->getCheck( 'exportall' ) && $config->get( 'ExportAllowAll' ) ) {
+			$this->doExport = true;
+			$exportall = true;
 
-			$exporter->pageByTitle( $title );
+			/* Although $page and $history are not used later on, we
+			nevertheless set them to avoid that PHP notices about using
+			undefined variables foul up our XML output (see call to
+			doExport(...) further down) */
+			$page = '';
+			$history = '';
+		} elseif ( $request->wasPosted() && $par == '' ) {
+			$page = $request->getText( 'pages' );
+			$this->curonly = $request->getCheck( 'curonly' );
+			$rawOffset = $request->getVal( 'offset' );
+
+			if ( $rawOffset ) {
+				$offset = wfTimestamp( TS_MW, $rawOffset );
+			} else {
+				$offset = null;
+			}
+
+			$maxHistory = $config->get( 'ExportMaxHistory' );
+			$limit = $request->getInt( 'limit' );
+			$dir = $request->getVal( 'dir' );
+			$history = [
+				'dir' => 'asc',
+				'offset' => false,
+				'limit' => $maxHistory,
+			];
+			$historyCheck = $request->getCheck( 'history' );
+
+			if ( $this->curonly ) {
+				$history = WikiExporter::CURRENT;
+			} elseif ( !$historyCheck ) {
+				if ( $limit > 0 && ( $maxHistory == 0 || $limit < $maxHistory ) ) {
+					$history['limit'] = $limit;
+				}
+
+				if ( !is_null( $offset ) ) {
+					$history['offset'] = $offset;
+				}
+
+				if ( strtolower( $dir ) == 'desc' ) {
+					$history['dir'] = 'desc';
+				}
+			}
+
+			if ( $page != '' ) {
+				$this->doExport = true;
+			}
+		} else {
+			// Default to current-only for GET requests.
+			$page = $request->getText( 'pages', $par );
+			$historyCheck = $request->getCheck( 'history' );
+
+			if ( $historyCheck ) {
+				$history = WikiExporter::FULL;
+			} else {
+				$history = WikiExporter::CURRENT;
+			}
+
+			if ( $page != '' ) {
+				$this->doExport = true;
+			}
+		}
+
+		if ( !$config->get( 'ExportAllowHistory' ) ) {
+			// Override
+			$history = WikiExporter::CURRENT;
+		}
+
+		$list_authors = $request->getCheck( 'listauthors' );
+		if ( !$this->curonly || !$config->get( 'ExportAllowListContributors' ) ) {
+			$list_authors = false;
+		}
+
+		if ( $this->doExport ) {
+			$this->getOutput()->disable();
+
+			// Cancel output buffering and gzipping if set
+			// This should provide safer streaming for pages with history
+			wfResetOutputBuffers();
+			$request->response()->header( "Content-type: application/xml; charset=utf-8" );
+			$request->response()->header( "X-Robots-Tag: noindex,nofollow" );
+
+			if ( $request->getCheck( 'wpDownload' ) ) {
+				// Provide a sane filename suggestion
+				$filename = urlencode( $config->get( 'Sitename' ) . '-' . wfTimestampNow() . '.xml' );
+				$request->response()->header( "Content-disposition: attachment;filename={$filename}" );
+			}
+
+			$this->doExport( $page, $history, $list_authors, $exportall );
+
+			return;
+		}
+
+		$out = $this->getOutput();
+		$out->addWikiMsg( 'exporttext' );
+
+		if ( $page == '' ) {
+			$categoryName = $request->getText( 'catname' );
+		} else {
+			$categoryName = '';
+		}
+
+		$formDescriptor = [
+			'catname' => [
+				'type' => 'textwithbutton',
+				'name' => 'catname',
+				'horizontal-label' => true,
+				'label-message' => 'export-addcattext',
+				'default' => $categoryName,
+				'size' => 40,
+				'buttontype' => 'submit',
+				'buttonname' => 'addcat',
+				'buttondefault' => $this->msg( 'export-addcat' )->text(),
+				'hide-if' => [ '===', 'exportall', '1' ],
+			],
+		];
+		if ( $config->get( 'ExportFromNamespaces' ) ) {
+			$formDescriptor += [
+				'nsindex' => [
+					'type' => 'namespaceselectwithbutton',
+					'default' => $nsindex,
+					'label-message' => 'export-addnstext',
+					'horizontal-label' => true,
+					'name' => 'nsindex',
+					'id' => 'namespace',
+					'cssclass' => 'namespaceselector',
+					'buttontype' => 'submit',
+					'buttonname' => 'addns',
+					'buttondefault' => $this->msg( 'export-addns' )->text(),
+					'hide-if' => [ '===', 'exportall', '1' ],
+				],
+			];
+		}
+
+		if ( $config->get( 'ExportAllowAll' ) ) {
+			$formDescriptor += [
+				'exportall' => [
+					'type' => 'check',
+					'label-message' => 'exportall',
+					'name' => 'exportall',
+					'id' => 'exportall',
+					'default' => $request->wasPosted() ? $request->getCheck( 'exportall' ) : false,
+				],
+			];
+		}
+
+		$formDescriptor += [
+			'textarea' => [
+				'class' => 'HTMLTextAreaField',
+				'name' => 'pages',
+				'label-message' => 'export-manual',
+				'nodata' => true,
+				'rows' => 10,
+				'default' => $page,
+				'hide-if' => [ '===', 'exportall', '1' ],
+			],
+		];
+
+		if ( $config->get( 'ExportAllowHistory' ) ) {
+			$formDescriptor += [
+				'curonly' => [
+					'type' => 'check',
+					'label-message' => 'exportcuronly',
+					'name' => 'curonly',
+					'id' => 'curonly',
+					'default' => $request->wasPosted() ? $request->getCheck( 'curonly' ) : true,
+				],
+			];
+		} else {
+			$out->addWikiMsg( 'exportnohistory' );
+		}
+
+		$formDescriptor += [
+			'templates' => [
+				'type' => 'check',
+				'label-message' => 'export-templates',
+				'name' => 'templates',
+				'id' => 'wpExportTemplates',
+				'default' => $request->wasPosted() ? $request->getCheck( 'templates' ) : false,
+			],
+		];
+
+		if ( $config->get( 'ExportMaxLinkDepth' ) || $this->userCanOverrideExportDepth() ) {
+			$formDescriptor += [
+				'pagelink-depth' => [
+					'type' => 'text',
+					'name' => 'pagelink-depth',
+					'id' => 'pagelink-depth',
+					'label-message' => 'export-pagelinks',
+					'default' => '0',
+					'size' => 20,
+				],
+			];
+		}
+
+		$formDescriptor += [
+			'wpDownload' => [
+				'type' => 'check',
+				'name' => 'wpDownload',
+				'id' => 'wpDownload',
+				'default' => $request->wasPosted() ? $request->getCheck( 'wpDownload' ) : true,
+				'label-message' => 'export-download',
+			],
+		];
+
+		if ( $config->get( 'ExportAllowListContributors' ) ) {
+			$formDescriptor += [
+				'listauthors' => [
+					'type' => 'check',
+					'label-message' => 'exportlistauthors',
+					'default' => $request->wasPosted() ? $request->getCheck( 'listauthors' ) : false,
+					'name' => 'listauthors',
+					'id' => 'listauthors',
+				],
+			];
+		}
+
+		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() );
+		$htmlForm->setSubmitTextMsg( 'export-submit' );
+		$htmlForm->prepareForm()->displayForm( false );
+		$this->addHelpLink( 'Help:Export' );
+	}
+
+	/**
+	 * @return bool
+	 */
+	private function userCanOverrideExportDepth() {
+		return $this->getUser()->isAllowed( 'override-export-depth' );
+	}
+
+	/**
+	 * Do the actual page exporting
+	 *
+	 * @param string $page User input on what page(s) to export
+	 * @param int $history One of the WikiExporter history export constants
+	 * @param bool $list_authors Whether to add distinct author list (when
+	 *   not returning full history)
+	 * @param bool $exportall Whether to export everything
+	 */
+	private function doExport( $page, $history, $list_authors, $exportall ) {
+		// If we are grabbing everything, enable full history and ignore the rest
+		if ( $exportall ) {
+			$history = WikiExporter::FULL;
+		} else {
+			$pageSet = []; // Inverted index of all pages to look up
+
+			// Split up and normalize input
+			foreach ( explode( "\n", $page ) as $pageName ) {
+				$pageName = trim( $pageName );
+				$title = Title::newFromText( $pageName );
+				if ( $title && !$title->isExternal() && $title->getText() !== '' ) {
+					// Only record each page once!
+					$pageSet[$title->getPrefixedText()] = true;
+				}
+			}
+
+			// Set of original pages to pass on to further manipulation...
+			$inputPages = array_keys( $pageSet );
+
+			// Look up any linked pages if asked...
+			if ( $this->templates ) {
+				$pageSet = $this->getTemplates( $inputPages, $pageSet );
+			}
+			$linkDepth = $this->pageLinkDepth;
+			if ( $linkDepth ) {
+				$pageSet = $this->getPageLinks( $inputPages, $pageSet, $linkDepth );
+			}
+
+			$pages = array_keys( $pageSet );
+
+			// Normalize titles to the same format and remove dupes, see T19374
+			foreach ( $pages as $k => $v ) {
+				$pages[$k] = str_replace( " ", "_", $v );
+			}
+
+			$pages = array_unique( $pages );
+		}
+
+		/* Ok, let's get to it... */
+		if ( $history == WikiExporter::CURRENT ) {
+			$lb = false;
+			$db = wfGetDB( DB_REPLICA );
+			$buffer = WikiExporter::BUFFER;
+		} else {
+			// Use an unbuffered query; histories may be very long!
+			$lb = MediaWikiServices::getInstance()->getDBLoadBalancerFactory()->newMainLB();
+			$db = $lb->getConnection( DB_REPLICA );
+			$buffer = WikiExporter::STREAM;
+
+			// This might take a while... :D
+			MediaWiki\suppressWarnings();
+			set_time_limit( 0 );
+			MediaWiki\restoreWarnings();
+		}
+
+		$exporter = new WikiExporter( $db, $history, $buffer );
+		$exporter->list_authors = $list_authors;
+		$exporter->openStream();
+
+		if ( $exportall ) {
+			$exporter->allPages();
+		} else {
+			foreach ( $pages as $page ) {
+				# T10824: Only export pages the user can read
+				$title = Title::newFromText( $page );
+				if ( is_null( $title ) ) {
+					// @todo Perhaps output an <error> tag or something.
+					continue;
+				}
+
+				if ( !$title->userCan( 'read', $this->getUser() ) ) {
+					// @todo Perhaps output an <error> tag or something.
+					continue;
+				}
+
+				$exporter->pageByTitle( $title );
+			}
 		}
 
 		$exporter->closeStream();
-		return;
+
+		if ( $lb ) {
+			$lb->closeAll();
+		}
 	}
 
-	$self = SpecialPage::getTitleFor( 'Export' );
-	$wgOut->addHtml( wfMsgExt( 'exporttext', 'parse' ) );
+	/**
+	 * @param Title $title
+	 * @return array
+	 */
+	private function getPagesFromCategory( $title ) {
+		global $wgContLang;
 
-	$form = Xml::openElement( 'form', array( 'method' => 'post',
-		'action' => $self->getLocalUrl( 'action=submit' ) ) );
+		$maxPages = $this->getConfig()->get( 'ExportPagelistLimit' );
 
-	$form .= Xml::inputLabel( wfMsg( 'export-addcattext' )	, 'catname', 'catname', 40 ) . '&nbsp;';
-	$form .= Xml::submitButton( wfMsg( 'export-addcat' ), array( 'name' => 'addcat' ) ) . '<br />';
+		$name = $title->getDBkey();
 
-	$form .= Xml::openElement( 'textarea', array( 'name' => 'pages', 'cols' => 40, 'rows' => 10 ) );
-	$form .= htmlspecialchars( $page );
-	$form .= Xml::closeElement( 'textarea' );
-	$form .= '<br />';
+		$dbr = wfGetDB( DB_REPLICA );
+		$res = $dbr->select(
+			[ 'page', 'categorylinks' ],
+			[ 'page_namespace', 'page_title' ],
+			[ 'cl_from=page_id', 'cl_to' => $name ],
+			__METHOD__,
+			[ 'LIMIT' => $maxPages ]
+		);
 
-	if( $wgExportAllowHistory ) {
-		$form .= Xml::checkLabel( wfMsg( 'exportcuronly' ), 'curonly', 'curonly', true ) . '<br />';
-	} else {
-		$wgOut->addHtml( wfMsgExt( 'exportnohistory', 'parse' ) );
+		$pages = [];
+
+		foreach ( $res as $row ) {
+			$n = $row->page_title;
+			if ( $row->page_namespace ) {
+				$ns = $wgContLang->getNsText( $row->page_namespace );
+				$n = $ns . ':' . $n;
+			}
+
+			$pages[] = $n;
+		}
+
+		return $pages;
 	}
-	$form .= Xml::checkLabel( wfMsg( 'export-templates' ), 'templates', 'wpExportTemplates', false ) . '<br />';
-	// Enable this when we can do something useful exporting/importing image information. :)
-	//$form .= Xml::checkLabel( wfMsg( 'export-images' ), 'images', 'wpExportImages', false ) . '<br />';
-	$form .= Xml::checkLabel( wfMsg( 'export-download' ), 'wpDownload', 'wpDownload', true ) . '<br />';
 
-	$form .= Xml::submitButton( wfMsg( 'export-submit' ) );
-	$form .= Xml::closeElement( 'form' );
-	$wgOut->addHtml( $form );
+	/**
+	 * @param int $nsindex
+	 * @return array
+	 */
+	private function getPagesFromNamespace( $nsindex ) {
+		global $wgContLang;
+
+		$maxPages = $this->getConfig()->get( 'ExportPagelistLimit' );
+
+		$dbr = wfGetDB( DB_REPLICA );
+		$res = $dbr->select(
+			'page',
+			[ 'page_namespace', 'page_title' ],
+			[ 'page_namespace' => $nsindex ],
+			__METHOD__,
+			[ 'LIMIT' => $maxPages ]
+		);
+
+		$pages = [];
+
+		foreach ( $res as $row ) {
+			$n = $row->page_title;
+
+			if ( $row->page_namespace ) {
+				$ns = $wgContLang->getNsText( $row->page_namespace );
+				$n = $ns . ':' . $n;
+			}
+
+			$pages[] = $n;
+		}
+
+		return $pages;
+	}
+
+	/**
+	 * Expand a list of pages to include templates used in those pages.
+	 * @param array $inputPages List of titles to look up
+	 * @param array $pageSet Associative array indexed by titles for output
+	 * @return array Associative array index by titles
+	 */
+	private function getTemplates( $inputPages, $pageSet ) {
+		return $this->getLinks( $inputPages, $pageSet,
+			'templatelinks',
+			[ 'namespace' => 'tl_namespace', 'title' => 'tl_title' ],
+			[ 'page_id=tl_from' ]
+		);
+	}
+
+	/**
+	 * Validate link depth setting, if available.
+	 * @param int $depth
+	 * @return int
+	 */
+	private function validateLinkDepth( $depth ) {
+		if ( $depth < 0 ) {
+			return 0;
+		}
+
+		if ( !$this->userCanOverrideExportDepth() ) {
+			$maxLinkDepth = $this->getConfig()->get( 'ExportMaxLinkDepth' );
+			if ( $depth > $maxLinkDepth ) {
+				return $maxLinkDepth;
+			}
+		}
+
+		/*
+		 * There's a HARD CODED limit of 5 levels of recursion here to prevent a
+		 * crazy-big export from being done by someone setting the depth
+		 * number too high. In other words, last resort safety net.
+		 */
+
+		return intval( min( $depth, 5 ) );
+	}
+
+	/**
+	 * Expand a list of pages to include pages linked to from that page.
+	 * @param array $inputPages
+	 * @param array $pageSet
+	 * @param int $depth
+	 * @return array
+	 */
+	private function getPageLinks( $inputPages, $pageSet, $depth ) {
+		// @codingStandardsIgnoreStart Squiz.WhiteSpace.SemicolonSpacing.Incorrect
+		for ( ; $depth > 0; --$depth ) {
+			// @codingStandardsIgnoreEnd
+			$pageSet = $this->getLinks(
+				$inputPages, $pageSet, 'pagelinks',
+				[ 'namespace' => 'pl_namespace', 'title' => 'pl_title' ],
+				[ 'page_id=pl_from' ]
+			);
+			$inputPages = array_keys( $pageSet );
+		}
+
+		return $pageSet;
+	}
+
+	/**
+	 * Expand a list of pages to include items used in those pages.
+	 * @param array $inputPages Array of page titles
+	 * @param array $pageSet
+	 * @param string $table
+	 * @param array $fields Array of field names
+	 * @param array $join
+	 * @return array
+	 */
+	private function getLinks( $inputPages, $pageSet, $table, $fields, $join ) {
+		$dbr = wfGetDB( DB_REPLICA );
+
+		foreach ( $inputPages as $page ) {
+			$title = Title::newFromText( $page );
+
+			if ( $title ) {
+				$pageSet[$title->getPrefixedText()] = true;
+				/// @todo FIXME: May or may not be more efficient to batch these
+				///        by namespace when given multiple input pages.
+				$result = $dbr->select(
+					[ 'page', $table ],
+					$fields,
+					array_merge(
+						$join,
+						[
+							'page_namespace' => $title->getNamespace(),
+							'page_title' => $title->getDBkey()
+						]
+					),
+					__METHOD__
+				);
+
+				foreach ( $result as $row ) {
+					$template = Title::makeTitle( $row->namespace, $row->title );
+					$pageSet[$template->getPrefixedText()] = true;
+				}
+			}
+		}
+
+		return $pageSet;
+	}
+
+	protected function getGroupName() {
+		return 'pagetools';
+	}
 }

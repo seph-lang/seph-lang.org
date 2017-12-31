@@ -1,5 +1,5 @@
-MediaWiki has optional support for memcached, a "high-performance, 
-distributed memory object caching system". For general information 
+MediaWiki has optional support for memcached, a "high-performance,
+distributed memory object caching system". For general information
 on it, see: http://www.danga.com/memcached/
 
 Memcached is likely more trouble than a small site will need, but
@@ -10,7 +10,7 @@ in memory.
 == Installation ==
 
 Packages are available for Fedora, Debian, Ubuntu and probably other
-Linux distributions. If you there's no package available for your 
+Linux distributions. If there's no package available for your
 distribution, you can compile it from source.
 
 == Compilation ==
@@ -25,7 +25,7 @@ distribution, you can compile it from source.
 
 * memcached: http://www.danga.com/memcached/download.bml
   (as of this writing, 1.1.9 is current)
-  
+
 Memcached and libevent are under BSD-style licenses.
 
 The server should run on Linux and other Unix-like systems... you
@@ -40,9 +40,9 @@ memcached servers are not publicly accessible. Otherwise, anyone on
 the internet can put data into and read data from your cache.
 
 An attacker familiar with MediaWiki internals could use this to steal
-passwords and email addresses, or to make themselves a sysop and 
-install malicious javascript on the site. There may be other types 
-of vulnerability, no audit has been done -- so be safe and keep it 
+passwords and email addresses, or to make themselves a sysop and
+install malicious javascript on the site. There may be other types
+of vulnerability, no audit has been done -- so be safe and keep it
 behind a firewall.
 ********************* W A R N I N G ! ! ! ! ! ***********************
 
@@ -56,7 +56,7 @@ To start the daemon manually, use something like:
   memcached -d -l 127.0.0.1 -p 11211 -m 64
 
 (to run in daemon mode, accessible only via loopback interface,
-on port 11000, using up to 64MB of memory)
+on port 11211, using up to 64MB of memory)
 
 In your LocalSettings.php file, set:
 
@@ -71,14 +71,14 @@ it has twice the memory of the others and you want to spread
 usage evenly), make its entry a subarray:
 
   $wgMemCachedServers = array(
-    "127.0.0.1:11000", # one gig on this box
-    array("192.168.0.1:11000", 2 ) # two gigs on the other box
+    "127.0.0.1:11211", # one gig on this box
+    array("192.168.0.1:11211", 2 ) # two gigs on the other box
   );
 
 == PHP client for memcached ==
 
 MediaWiki uses a fork of Ryan T. Dean's pure-PHP memcached client.
-The newer PECL module is not yet supported.
+It also supports the PECL PHP extension for memcached.
 
 MediaWiki uses three object for object caching:
 * $wgMemc, controlled by $wgMainCacheType
@@ -91,18 +91,11 @@ database. If the cache daemon can't be contacted, it should also
 disable itself fairly smoothly.
 
 By default, $wgMemc is used but when it is $parserMemc or $messageMemc
-this is mentionned below.
+this is mentioned below.
 
 == Keys used ==
 
 (incomplete, out of date)
-
-Ajax Search:
-	key: $wgDBname:ajaxsearch:md5( $search )
-	ex: wikidb:ajaxsearch:9565814d5d564fa898dd6111b94fae0b
-	stores: array with the result of research of a given text
-	cleared by: nothing
-	expiry: 30 minutes
 
 Date Formatter:
 	key: $wgDBname:dateformatter
@@ -129,7 +122,7 @@ Lag time of the databases:
 	key: $wgDBname:lag_times
 	ex: wikidb:lag_times
 	stores: array mapping the database id to its lag time
-	expriy: 5 secondes
+	expiry: 5 secondes
 	cleared by: nothing
 
 Localisation:
@@ -145,8 +138,8 @@ Message Cache:
 	key: $wgDBname:messages, $wgDBname:messages-hash, $wgDBname:messages-status
 	ex: wikidb:messages, wikidb:messages-hash, wikidb:messages-status
 	stores: an array where the keys are DB keys and the values are messages
-	set in: wfMsg(), Article::editUpdates() both call wfLoadAllMessages()
-	expriy: $wgMsgCacheExpiry
+	set in: wfMessage(), Article::editUpdates() and Title::moveTo()
+	expiry: $wgMsgCacheExpiry
 	cleared by: nothing
 
 Newtalk:
@@ -159,17 +152,20 @@ Newtalk:
 
 Parser Cache:
 	stored in: $parserMemc
-	controlled by: $wgEnableParserCache
-	key: $wgDBname:pcache:idhash:$pageid-$renderkey!$hash$edit
+	key: $wgDBname:pcache:idhash:$pageid-$renderkey!$hash
 		$pageid: id of the page
 		$renderkey: 1 if action=render, 0 otherwise
-		$hash: hash of user options, see User::getPageRenderingHash()
-		$edit: '!edit=0' if the user can't edit the page, '' otherwise
+		$hash: hash of user options applied to the page, see ParserOptions::optionsHash()
 	ex: wikidb:pcache:idhash:1-0!1!0!!en!2
 	stores: ParserOutput object
-	modified by: Article::editUpdates()
-	expriy: $wgParserCacheExpireTime or one hour if it contains specific magic
-		words
+	modified by: WikiPage::doEditUpdates() or PoolWorkArticleView::doWork()
+	expiry: $wgParserCacheExpireTime or less if it contains short lived functions
+
+	key: $wgDBname:pcache:idoptions:$pageid
+	stores: CacheTime object with an additional list of used options for the hash,
+    serves as ParserCache pointer.
+	modified by: ParserCache::save()
+	expiry: The same as the ParserCache entry it points to.
 
 Ping limiter:
 	controlled by: $wgRateLimits
@@ -198,14 +194,14 @@ Revision text:
 	ex: wikidb:revisiontext:textid:1012
 	stores: text of a revision
 	cleared by: nothing
-	expriry: $wgRevisionCacheExpiry
+	expiry: $wgRevisionCacheExpiry
 
 Sessions:
-	controlled by: $wgSessionsInMemcached
+	controlled by: $wgSessionsInObjectCache
 	key: $wgBDname:session:$id
 	ex: wikidb:session:38d7c5b8d3bfc51egf40c69bc40f8be3
 	stores: $SESSION, useful when using a multi-sever wiki
-	expriy: one hour
+	expiry: one hour
 	cleared by: session_destroy()
 
 Sidebar:
@@ -214,7 +210,7 @@ Sidebar:
 	key: $wgDBname:sidebar
 	ex: wikidb:sidebar
 	stores: the html output of the sidebar
-	expriy: $wgSidebarCacheExpiry
+	expiry: $wgSidebarCacheExpiry
 	cleared by: MessageCache::replace()
 
 Special:Allpages:
@@ -226,26 +222,14 @@ Special:Allpages:
 
 Special:Recentchanges (feed):
 	stored in: $messageMemc
-	key: $wgDBname:rcfeed:$format:limit:$imit:minor:$hideminor and
+	key: $wgDBname:rcfeed:$format:$limit:$hideminor:$target and
 		rcfeed:$format:timestamp
-	ex: wikidb:rcfeed:rss:limit:50:minor:0 and rcfeed:rss:timestamp
+	ex: wikidb:rcfeed:rss:50:: and rcfeed:rss:timestamp
 	stores: xml output of feed
 	expiry: one day
-	clear by: calling Special:Recentchanges?action=purge
+	clear by: maintenance/rebuildrecentchanges.php script, or
+	calling Special:Recentchanges?action=purge&feed=rss,
+	Special:Recentchanges?action=purge&feed=atom,
+	but note need $wgGroupPermissions[...]['purge'] permission.
 
-Statistics:
-	controlled by: $wgStatsMethod
-	key: $wgDBname:stats:$key
-	ex: wikibd:stats:request_with_session
-	stores: counter for statistics (see maintenance/stats.php script)
-	expiry: none (?)
-	cleared by: maintenance/clear_stats.php script
-
-User:
-	key: $wgDBname:user:id:$sId
-	ex: wikidb:user:id:51
-	stores: instance of class User
-	set in: User::saveToCache()
-	cleared by: User::saveSettings(), User::clearSharedCache()
-	
 ... more to come ...

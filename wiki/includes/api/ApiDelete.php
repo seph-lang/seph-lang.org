@@ -1,10 +1,10 @@
 <?php
-
-/*
- * Created on Jun 30, 2007
- * API for MediaWiki 1.8+
+/**
  *
- * Copyright (C) 2007 Roan Kattouw <Firstname>.<Lastname>@home.nl
+ *
+ * Created on Jun 30, 2007
+ *
+ * Copyright © 2007 Roan Kattouw "<Firstname>.<Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,191 +18,216 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
 
-if (!defined('MEDIAWIKI')) {
-	// Eclipse helper - will be ignored in production
-	require_once ("ApiBase.php");
-}
-
-
 /**
- * API module that facilitates deleting pages. The API eqivalent of action=delete.
+ * API module that facilitates deleting pages. The API equivalent of action=delete.
  * Requires API write mode to be enabled.
  *
  * @ingroup API
  */
 class ApiDelete extends ApiBase {
-
-	public function __construct($main, $action) {
-		parent :: __construct($main, $action);
-	}
-
 	/**
-	 * Extracts the title, token, and reason from the request parameters and invokes
+	 * Extracts the title and reason from the request parameters and invokes
 	 * the local delete() function with these as arguments. It does not make use of
 	 * the delete function specified by Article.php. If the deletion succeeds, the
 	 * details of the article deleted and the reason for deletion are added to the
 	 * result object.
 	 */
 	public function execute() {
-		global $wgUser;
-		$this->getMain()->requestWriteMode();
+		$this->useTransactionalTimeLimit();
+
 		$params = $this->extractRequestParams();
 
-		$titleObj = NULL;
-		if(!isset($params['title']))
-			$this->dieUsageMsg(array('missingparam', 'title'));
-		if(!isset($params['token']))
-			$this->dieUsageMsg(array('missingparam', 'token'));
-
-		$titleObj = Title::newFromText($params['title']);
-		if(!$titleObj)
-			$this->dieUsageMsg(array('invalidtitle', $params['title']));
-		if(!$titleObj->exists())
-			$this->dieUsageMsg(array('notanarticle'));
-
-		$reason = (isset($params['reason']) ? $params['reason'] : NULL);
-		if ($titleObj->getNamespace() == NS_IMAGE) {
-			$retval = self::deletefile($params['token'], $titleObj, $params['oldimage'], $reason, false);
-			if(!empty($retval))
-				// We don't care about multiple errors, just report one of them
-				$this->dieUsageMsg(current($retval));
-		} else {
-			$articleObj = new Article($titleObj);
-			$retval = self::delete($articleObj, $params['token'], $reason);
-			
-			if(!empty($retval))
-				// We don't care about multiple errors, just report one of them
-				$this->dieUsageMsg(current($retval));
-			
-			if($params['watch'] || $wgUser->getOption('watchdeletion'))
-				$articleObj->doWatch();
-			else if($params['unwatch'])
-				$articleObj->doUnwatch();
+		$pageObj = $this->getTitleOrPageId( $params, 'fromdbmaster' );
+		$titleObj = $pageObj->getTitle();
+		if ( !$pageObj->exists() &&
+			!( $titleObj->getNamespace() == NS_FILE && self::canDeleteFile( $pageObj->getFile() ) )
+		) {
+			$this->dieWithError( 'apierror-missingtitle' );
 		}
 
-		$r = array('title' => $titleObj->getPrefixedText(), 'reason' => $reason);
-		$this->getResult()->addValue(null, $this->getModuleName(), $r);
-	}
+		$reason = $params['reason'];
+		$user = $this->getUser();
 
-	private static function getPermissionsError(&$title, $token) {
-		global $wgUser;
-		// Check wiki readonly
-		if (wfReadOnly()) return array(array('readonlytext'));
-		
-		// Check permissions
-		$errors = $title->getUserPermissionsErrors('delete', $wgUser);
-		if (count($errors) > 0) return $errors;
-		
-		// Check token
-		if(!$wgUser->matchEditToken($token))
-			return array(array('sessionfailure'));
-		return array();
+		// Check that the user is allowed to carry out the deletion
+		$this->checkTitleUserPermissions( $titleObj, 'delete' );
+
+		// If change tagging was requested, check that the user is allowed to tag,
+		// and the tags are valid
+		if ( count( $params['tags'] ) ) {
+			$tagStatus = ChangeTags::canAddTagsAccompanyingChange( $params['tags'], $user );
+			if ( !$tagStatus->isOK() ) {
+				$this->dieStatus( $tagStatus );
+			}
+		}
+
+		if ( $titleObj->getNamespace() == NS_FILE ) {
+			$status = self::deleteFile(
+				$pageObj,
+				$user,
+				$params['oldimage'],
+				$reason,
+				false,
+				$params['tags']
+			);
+		} else {
+			$status = self::delete( $pageObj, $user, $reason, $params['tags'] );
+		}
+
+		if ( !$status->isGood() ) {
+			$this->dieStatus( $status );
+		}
+
+		// Deprecated parameters
+		if ( $params['watch'] ) {
+			$watch = 'watch';
+		} elseif ( $params['unwatch'] ) {
+			$watch = 'unwatch';
+		} else {
+			$watch = $params['watchlist'];
+		}
+		$this->setWatch( $watch, $titleObj, 'watchdeletion' );
+
+		$r = [
+			'title' => $titleObj->getPrefixedText(),
+			'reason' => $reason,
+			'logid' => $status->value
+		];
+		$this->getResult()->addValue( null, $this->getModuleName(), $r );
 	}
 
 	/**
 	 * We have our own delete() function, since Article.php's implementation is split in two phases
 	 *
-	 * @param Article $article - Article object to work on
-	 * @param string $token - Delete token (same as edit token)
-	 * @param string $reason - Reason for the deletion. Autogenerated if NULL
-	 * @return Title::getUserPermissionsErrors()-like array
+	 * @param Page|WikiPage $page Page or WikiPage object to work on
+	 * @param User $user User doing the action
+	 * @param string|null &$reason Reason for the deletion. Autogenerated if null
+	 * @param array $tags Tags to tag the deletion with
+	 * @return Status
 	 */
-	public static function delete(&$article, $token, &$reason = NULL)
-	{
-		global $wgUser;
-		
-		$errors = self::getPermissionsError($article->getTitle(), $token);
-		if (count($errors)) return $errors;
+	protected static function delete( Page $page, User $user, &$reason = null, $tags = [] ) {
+		$title = $page->getTitle();
 
 		// Auto-generate a summary, if necessary
-		if(is_null($reason))
-		{
-			# Need to pass a throwaway variable because generateReason expects
-			# a reference
+		if ( is_null( $reason ) ) {
+			// Need to pass a throwaway variable because generateReason expects
+			// a reference
 			$hasHistory = false;
-			$reason = $article->generateReason($hasHistory);
-			if($reason === false)
-				return array(array('cannotdelete'));
+			$reason = $page->getAutoDeleteReason( $hasHistory );
+			if ( $reason === false ) {
+				return Status::newFatal( 'cannotdelete', $title->getPrefixedText() );
+			}
 		}
-		
-		if (!wfRunHooks('ArticleDelete', array(&$article, &$wgUser, &$reason)))
-			$this->dieUsageMsg(array('hookaborted'));
+
+		$error = '';
 
 		// Luckily, Article.php provides a reusable delete function that does the hard work for us
-		if($article->doDeleteArticle($reason)) {
-			wfRunHooks('ArticleDeleteComplete', array(&$article, &$wgUser, $reason, $article->getId()));
-			return array();
+		return $page->doDeleteArticleReal( $reason, false, 0, true, $error, $user, $tags );
+	}
+
+	/**
+	 * @param File $file
+	 * @return bool
+	 */
+	protected static function canDeleteFile( File $file ) {
+		return $file->exists() && $file->isLocal() && !$file->getRedirected();
+	}
+
+	/**
+	 * @param Page $page Object to work on
+	 * @param User $user User doing the action
+	 * @param string $oldimage Archive name
+	 * @param string &$reason Reason for the deletion. Autogenerated if null.
+	 * @param bool $suppress Whether to mark all deleted versions as restricted
+	 * @param array $tags Tags to tag the deletion with
+	 * @return Status
+	 */
+	protected static function deleteFile( Page $page, User $user, $oldimage,
+		&$reason = null, $suppress = false, $tags = []
+	) {
+		$title = $page->getTitle();
+
+		$file = $page->getFile();
+		if ( !self::canDeleteFile( $file ) ) {
+			return self::delete( $page, $user, $reason, $tags );
 		}
-		return array(array('cannotdelete', $article->mTitle->getPrefixedText()));
-	}
 
-	public static function deleteFile($token, &$title, $oldimage, &$reason = NULL, $suppress = false)
-	{
-		$errors = self::getPermissionsError($title, $token);
-		if (count($errors)) return $errors;
-
-		if( $oldimage && !FileDeleteForm::isValidOldSpec($oldimage) )
-			return array(array('invalidoldimage'));
-
-		$file = wfFindFile($title, false, FileRepo::FIND_IGNORE_REDIRECT);
-		$oldfile = false;
-		
-		if( $oldimage )
+		if ( $oldimage ) {
+			if ( !FileDeleteForm::isValidOldSpec( $oldimage ) ) {
+				return Status::newFatal( 'invalidoldimage' );
+			}
 			$oldfile = RepoGroup::singleton()->getLocalRepo()->newFromArchiveName( $title, $oldimage );
-			
-		if( !FileDeleteForm::haveDeletableFile($file, $oldfile, $oldimage) )
-			return array(array('nofile'));
+			if ( !$oldfile->exists() || !$oldfile->isLocal() || $oldfile->getRedirected() ) {
+				return Status::newFatal( 'nodeleteablefile' );
+			}
+		}
 
-		$status = FileDeleteForm::doDelete( $title, $file, $oldimage, $reason, $suppress );
-				
-		if( !$status->isGood() )
-			return array(array('cannotdelete', $title->getPrefixedText()));
-			
-		return array();
+		if ( is_null( $reason ) ) { // Log and RC don't like null reasons
+			$reason = '';
+		}
+
+		return FileDeleteForm::doDelete( $title, $file, $oldimage, $reason, $suppress, $user, $tags );
 	}
-	
-	public function mustBePosted() { return true; }
+
+	public function mustBePosted() {
+		return true;
+	}
+
+	public function isWriteMode() {
+		return true;
+	}
 
 	public function getAllowedParams() {
-		return array (
+		return [
 			'title' => null,
-			'token' => null,
+			'pageid' => [
+				ApiBase::PARAM_TYPE => 'integer'
+			],
 			'reason' => null,
-			'watch' => false,
-			'unwatch' => false,
-			'oldimage' => null
-		);
+			'tags' => [
+				ApiBase::PARAM_TYPE => 'tags',
+				ApiBase::PARAM_ISMULTI => true,
+			],
+			'watch' => [
+				ApiBase::PARAM_DFLT => false,
+				ApiBase::PARAM_DEPRECATED => true,
+			],
+			'watchlist' => [
+				ApiBase::PARAM_DFLT => 'preferences',
+				ApiBase::PARAM_TYPE => [
+					'watch',
+					'unwatch',
+					'preferences',
+					'nochange'
+				],
+			],
+			'unwatch' => [
+				ApiBase::PARAM_DFLT => false,
+				ApiBase::PARAM_DEPRECATED => true,
+			],
+			'oldimage' => null,
+		];
 	}
 
-	public function getParamDescription() {
-		return array (
-			'title' => 'Title of the page you want to delete.',
-			'token' => 'A delete token previously retrieved through prop=info',
-			'reason' => 'Reason for the deletion. If not set, an automatically generated reason will be used.',
-			'watch' => 'Add the page to your watchlist',
-			'unwatch' => 'Remove the page from your watchlist',
-			'oldimage' => 'The name of the old image to delete as provided by iiprop=archivename'
-		);
+	public function needsToken() {
+		return 'csrf';
 	}
 
-	public function getDescription() {
-		return array(
-			'Deletes a page. You need to be logged in as a sysop to use this function, see also action=login.'
-		);
+	protected function getExamplesMessages() {
+		return [
+			'action=delete&title=Main%20Page&token=123ABC'
+				=> 'apihelp-delete-example-simple',
+			'action=delete&title=Main%20Page&token=123ABC&reason=Preparing%20for%20move'
+				=> 'apihelp-delete-example-reason',
+		];
 	}
 
-	protected function getExamples() {
-		return array (
-			'api.php?action=delete&title=Main%20Page&token=123ABC',
-			'api.php?action=delete&title=Main%20Page&token=123ABC&reason=Preparing%20for%20move'
-		);
-	}
-
-	public function getVersion() {
-		return __CLASS__ . ': $Id: ApiDelete.php 35350 2008-05-26 12:15:21Z simetrical $';
+	public function getHelpUrls() {
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Delete';
 	}
 }

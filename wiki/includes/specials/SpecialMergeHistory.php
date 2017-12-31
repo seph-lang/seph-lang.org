@@ -1,34 +1,82 @@
 <?php
 /**
- * Special page allowing users with the appropriate permissions to
- * merge article histories, with some restrictions
+ * Implements Special:MergeHistory
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
  * @ingroup SpecialPage
  */
 
 /**
- * Constructor
- */
-function wfSpecialMergehistory( $par ) {
-	global $wgRequest;
-
-	$form = new MergehistoryForm( $wgRequest, $par );
-	$form->execute();
-}
-
-/**
- * The HTML form for Special:MergeHistory, which allows users with the appropriate
- * permissions to view and restore deleted content.
+ * Special page allowing users with the appropriate permissions to
+ * merge article histories, with some restrictions
+ *
  * @ingroup SpecialPage
  */
-class MergehistoryForm {
-	var $mAction, $mTarget, $mDest, $mTimestamp, $mTargetID, $mDestID, $mComment;
-	var $mTargetObj, $mDestObj;
+class SpecialMergeHistory extends SpecialPage {
+	/** @var string */
+	protected $mAction;
 
-	function MergehistoryForm( $request, $par = "" ) {
-		global $wgUser;
+	/** @var string */
+	protected $mTarget;
 
+	/** @var string */
+	protected $mDest;
+
+	/** @var string */
+	protected $mTimestamp;
+
+	/** @var int */
+	protected $mTargetID;
+
+	/** @var int */
+	protected $mDestID;
+
+	/** @var string */
+	protected $mComment;
+
+	/** @var bool Was posted? */
+	protected $mMerge;
+
+	/** @var bool Was submitted? */
+	protected $mSubmitted;
+
+	/** @var Title */
+	protected $mTargetObj;
+
+	/** @var Title */
+	protected $mDestObj;
+
+	/** @var int[] */
+	public $prevId;
+
+	public function __construct() {
+		parent::__construct( 'MergeHistory', 'mergehistory' );
+	}
+
+	public function doesWrites() {
+		return true;
+	}
+
+	/**
+	 * @return void
+	 */
+	private function loadRequestParams() {
+		$request = $this->getRequest();
 		$this->mAction = $request->getVal( 'action' );
 		$this->mTarget = $request->getVal( 'target' );
 		$this->mDest = $request->getVal( 'dest' );
@@ -37,412 +85,301 @@ class MergehistoryForm {
 		$this->mTargetID = intval( $request->getVal( 'targetID' ) );
 		$this->mDestID = intval( $request->getVal( 'destID' ) );
 		$this->mTimestamp = $request->getVal( 'mergepoint' );
-		if( !preg_match("/[0-9]{14}/",$this->mTimestamp) ) {
+		if ( !preg_match( '/[0-9]{14}/', $this->mTimestamp ) ) {
 			$this->mTimestamp = '';
 		}
 		$this->mComment = $request->getText( 'wpComment' );
 
-		$this->mMerge = $request->wasPosted() && $wgUser->matchEditToken( $request->getVal( 'wpEditToken' ) );
+		$this->mMerge = $request->wasPosted()
+			&& $this->getUser()->matchEditToken( $request->getVal( 'wpEditToken' ) );
+
 		// target page
-		if( $this->mSubmitted ) {
-			$this->mTargetObj = Title::newFromURL( $this->mTarget );
-			$this->mDestObj = Title::newFromURL( $this->mDest );
+		if ( $this->mSubmitted ) {
+			$this->mTargetObj = Title::newFromText( $this->mTarget );
+			$this->mDestObj = Title::newFromText( $this->mDest );
 		} else {
 			$this->mTargetObj = null;
 			$this->mDestObj = null;
 		}
-
-		$this->preCacheMessages();
 	}
 
-	/**
-	 * As we use the same small set of messages in various methods and that
-	 * they are called often, we call them once and save them in $this->message
-	 */
-	function preCacheMessages() {
-		// Precache various messages
-		if( !isset( $this->message ) ) {
-			$this->message['last'] = wfMsgExt( 'last', array( 'escape') );
-		}
-	}
+	public function execute( $par ) {
+		$this->useTransactionalTimeLimit();
 
-	function execute() {
-		global $wgOut, $wgUser;
+		$this->checkPermissions();
+		$this->checkReadOnly();
 
-		$wgOut->setPagetitle( wfMsgHtml( "mergehistory" ) );
+		$this->loadRequestParams();
 
-		if( $this->mTargetID && $this->mDestID && $this->mAction=="submit" && $this->mMerge ) {
-			return $this->merge();
+		$this->setHeaders();
+		$this->outputHeader();
+
+		if ( $this->mTargetID && $this->mDestID && $this->mAction == 'submit' && $this->mMerge ) {
+			$this->merge();
+
+			return;
 		}
 
 		if ( !$this->mSubmitted ) {
 			$this->showMergeForm();
+
 			return;
 		}
 
-		$errors = array();
+		$errors = [];
 		if ( !$this->mTargetObj instanceof Title ) {
-			$errors[] = wfMsgExt( 'mergehistory-invalid-source', array( 'parse' ) );
-		} elseif( !$this->mTargetObj->exists() ) {
-			$errors[] = wfMsgExt( 'mergehistory-no-source', array( 'parse' ),
+			$errors[] = $this->msg( 'mergehistory-invalid-source' )->parseAsBlock();
+		} elseif ( !$this->mTargetObj->exists() ) {
+			$errors[] = $this->msg( 'mergehistory-no-source',
 				wfEscapeWikiText( $this->mTargetObj->getPrefixedText() )
-			);
+			)->parseAsBlock();
 		}
 
-		if ( !$this->mDestObj instanceof Title) {
-			$errors[] = wfMsgExt( 'mergehistory-invalid-destination', array( 'parse' ) );
-		} elseif( !$this->mDestObj->exists() ) {
-			$errors[] = wfMsgExt( 'mergehistory-no-destination', array( 'parse' ),
+		if ( !$this->mDestObj instanceof Title ) {
+			$errors[] = $this->msg( 'mergehistory-invalid-destination' )->parseAsBlock();
+		} elseif ( !$this->mDestObj->exists() ) {
+			$errors[] = $this->msg( 'mergehistory-no-destination',
 				wfEscapeWikiText( $this->mDestObj->getPrefixedText() )
-			);
+			)->parseAsBlock();
 		}
 
-		// TODO: warn about target = dest?
+		if ( $this->mTargetObj && $this->mDestObj && $this->mTargetObj->equals( $this->mDestObj ) ) {
+			$errors[] = $this->msg( 'mergehistory-same-destination' )->parseAsBlock();
+		}
 
 		if ( count( $errors ) ) {
 			$this->showMergeForm();
-			$wgOut->addHTML( implode( "\n", $errors ) );
+			$this->getOutput()->addHTML( implode( "\n", $errors ) );
 		} else {
 			$this->showHistory();
 		}
-
 	}
 
 	function showMergeForm() {
-		global $wgOut, $wgScript;
+		$out = $this->getOutput();
+		$out->addWikiMsg( 'mergehistory-header' );
 
-		$wgOut->addWikiMsg( 'mergehistory-header' );
-
-		$wgOut->addHtml(
-			Xml::openElement( 'form', array(
+		$out->addHTML(
+			Xml::openElement( 'form', [
 				'method' => 'get',
-				'action' => $wgScript ) ) .
-			'<fieldset>' .
-			Xml::element( 'legend', array(),
-				wfMsg( 'mergehistory-box' ) ) .
-			Xml::hidden( 'title',
-				SpecialPage::getTitleFor( 'Mergehistory' )->getPrefixedDbKey() ) .
-			Xml::hidden( 'submitted', '1' ) .
-			Xml::hidden( 'mergepoint', $this->mTimestamp ) .
-			Xml::openElement( 'table' ) .
-			"<tr>
-				<td>".Xml::label( wfMsg( 'mergehistory-from' ), 'target' )."</td>
-				<td>".Xml::input( 'target', 30, $this->mTarget, array('id'=>'target') )."</td>
+				'action' => wfScript() ] ) .
+				'<fieldset>' .
+				Xml::element( 'legend', [],
+					$this->msg( 'mergehistory-box' )->text() ) .
+				Html::hidden( 'title', $this->getPageTitle()->getPrefixedDBkey() ) .
+				Html::hidden( 'submitted', '1' ) .
+				Html::hidden( 'mergepoint', $this->mTimestamp ) .
+				Xml::openElement( 'table' ) .
+				'<tr>
+				<td>' . Xml::label( $this->msg( 'mergehistory-from' )->text(), 'target' ) . '</td>
+				<td>' . Xml::input( 'target', 30, $this->mTarget, [ 'id' => 'target' ] ) . '</td>
 			</tr><tr>
-				<td>".Xml::label( wfMsg( 'mergehistory-into' ), 'dest' )."</td>
-				<td>".Xml::input( 'dest', 30, $this->mDest, array('id'=>'dest') )."</td>
-			</tr><tr><td>" .
-			Xml::submitButton( wfMsg( 'mergehistory-go' ) ) .
-			"</td></tr>" .
-			Xml::closeElement( 'table' ) .
-			'</fieldset>' .
-			'</form>' );
+				<td>' . Xml::label( $this->msg( 'mergehistory-into' )->text(), 'dest' ) . '</td>
+				<td>' . Xml::input( 'dest', 30, $this->mDest, [ 'id' => 'dest' ] ) . '</td>
+			</tr><tr><td>' .
+				Xml::submitButton( $this->msg( 'mergehistory-go' )->text() ) .
+				'</td></tr>' .
+				Xml::closeElement( 'table' ) .
+				'</fieldset>' .
+				'</form>'
+		);
+
+		$this->addHelpLink( 'Help:Merge history' );
 	}
 
 	private function showHistory() {
-		global $wgLang, $wgContLang, $wgUser, $wgOut;
-
-		$this->sk = $wgUser->getSkin();
-
-		$wgOut->setPagetitle( wfMsg( "mergehistory" ) );
-
 		$this->showMergeForm();
 
 		# List all stored revisions
-		$revisions = new MergeHistoryPager( $this, array(), $this->mTargetObj, $this->mDestObj );
+		$revisions = new MergeHistoryPager(
+			$this, [], $this->mTargetObj, $this->mDestObj
+		);
 		$haveRevisions = $revisions && $revisions->getNumRows() > 0;
 
-		$titleObj = SpecialPage::getTitleFor( "Mergehistory" );
-		$action = $titleObj->getLocalURL( "action=submit" );
+		$out = $this->getOutput();
+		$titleObj = $this->getPageTitle();
+		$action = $titleObj->getLocalURL( [ 'action' => 'submit' ] );
 		# Start the form here
-		$top = Xml::openElement( 'form', array( 'method' => 'post', 'action' => $action, 'id' => 'merge' ) );
-		$wgOut->addHtml( $top );
+		$top = Xml::openElement(
+			'form',
+			[
+				'method' => 'post',
+				'action' => $action,
+				'id' => 'merge'
+			]
+		);
+		$out->addHTML( $top );
 
-		if( $haveRevisions ) {
+		if ( $haveRevisions ) {
 			# Format the user-visible controls (comment field, submission button)
 			# in a nice little table
-			$align = $wgContLang->isRtl() ? 'left' : 'right';
 			$table =
 				Xml::openElement( 'fieldset' ) .
-				Xml::openElement( 'table' ) .
-					"<tr>
-						<td colspan='2'>" .
-							wfMsgExt( 'mergehistory-merge', array('parseinline'),
-								$this->mTargetObj->getPrefixedText(), $this->mDestObj->getPrefixedText() ) .
-						"</td>
+					$this->msg( 'mergehistory-merge', $this->mTargetObj->getPrefixedText(),
+						$this->mDestObj->getPrefixedText() )->parse() .
+					Xml::openElement( 'table', [ 'id' => 'mw-mergehistory-table' ] ) .
+					'<tr>
+						<td class="mw-label">' .
+					Xml::label( $this->msg( 'mergehistory-reason' )->text(), 'wpComment' ) .
+					'</td>
+					<td class="mw-input">' .
+					Xml::input( 'wpComment', 50, $this->mComment, [ 'id' => 'wpComment' ] ) .
+					'</td>
 					</tr>
 					<tr>
-						<td align='$align'>" .
-							Xml::label( wfMsg( 'undeletecomment' ), 'wpComment' ) .
-						"</td>
-						<td>" .
-							Xml::input( 'wpComment', 50, $this->mComment ) .
-						"</td>
-					</tr>
-					<tr>
-						<td>&nbsp;</td>
-						<td>" .
-							Xml::submitButton( wfMsg( 'mergehistory-submit' ), array( 'name' => 'merge', 'id' => 'mw-merge-submit' ) ) .
-						"</td>
-					</tr>" .
-				Xml::closeElement( 'table' ) .
-				Xml::closeElement( 'fieldset' );
+						<td>&#160;</td>
+						<td class="mw-submit">' .
+					Xml::submitButton(
+						$this->msg( 'mergehistory-submit' )->text(),
+						[ 'name' => 'merge', 'id' => 'mw-merge-submit' ]
+					) .
+					'</td>
+					</tr>' .
+					Xml::closeElement( 'table' ) .
+					Xml::closeElement( 'fieldset' );
 
-			$wgOut->addHtml( $table );
+			$out->addHTML( $table );
 		}
 
-		$wgOut->addHTML( "<h2 id=\"mw-mergehistory\">" . wfMsgHtml( "mergehistory-list" ) . "</h2>\n" );
+		$out->addHTML(
+			'<h2 id="mw-mergehistory">' .
+				$this->msg( 'mergehistory-list' )->escaped() . "</h2>\n"
+		);
 
-		if( $haveRevisions ) {
-			$wgOut->addHTML( $revisions->getNavigationBar() );
-			$wgOut->addHTML( "<ul>" );
-			$wgOut->addHTML( $revisions->getBody() );
-			$wgOut->addHTML( "</ul>" );
-			$wgOut->addHTML( $revisions->getNavigationBar() );
+		if ( $haveRevisions ) {
+			$out->addHTML( $revisions->getNavigationBar() );
+			$out->addHTML( '<ul>' );
+			$out->addHTML( $revisions->getBody() );
+			$out->addHTML( '</ul>' );
+			$out->addHTML( $revisions->getNavigationBar() );
 		} else {
-			$wgOut->addWikiMsg( "mergehistory-empty" );
+			$out->addWikiMsg( 'mergehistory-empty' );
 		}
 
-		# Show relevant lines from the deletion log:
-		$wgOut->addHTML( "<h2>" . htmlspecialchars( LogPage::logName( 'merge' ) ) . "</h2>\n" );
-		LogEventsList::showLogExtract( $wgOut, 'merge', $this->mTargetObj->getPrefixedText() );
+		# Show relevant lines from the merge log:
+		$mergeLogPage = new LogPage( 'merge' );
+		$out->addHTML( '<h2>' . $mergeLogPage->getName()->escaped() . "</h2>\n" );
+		LogEventsList::showLogExtract( $out, 'merge', $this->mTargetObj );
 
 		# When we submit, go by page ID to avoid some nasty but unlikely collisions.
 		# Such would happen if a page was renamed after the form loaded, but before submit
-		$misc = Xml::hidden( 'targetID', $this->mTargetObj->getArticleID() );
-		$misc .= Xml::hidden( 'destID', $this->mDestObj->getArticleID() );
-		$misc .= Xml::hidden( 'target', $this->mTarget );
-		$misc .= Xml::hidden( 'dest', $this->mDest );
-		$misc .= Xml::hidden( 'wpEditToken', $wgUser->editToken() );
+		$misc = Html::hidden( 'targetID', $this->mTargetObj->getArticleID() );
+		$misc .= Html::hidden( 'destID', $this->mDestObj->getArticleID() );
+		$misc .= Html::hidden( 'target', $this->mTarget );
+		$misc .= Html::hidden( 'dest', $this->mDest );
+		$misc .= Html::hidden( 'wpEditToken', $this->getUser()->getEditToken() );
 		$misc .= Xml::closeElement( 'form' );
-		$wgOut->addHtml( $misc );
+		$out->addHTML( $misc );
 
 		return true;
 	}
 
 	function formatRevisionRow( $row ) {
-		global $wgUser, $wgLang;
-
 		$rev = new Revision( $row );
 
+		$linkRenderer = $this->getLinkRenderer();
+
 		$stxt = '';
-		$last = $this->message['last'];
+		$last = $this->msg( 'last' )->escaped();
 
 		$ts = wfTimestamp( TS_MW, $row->rev_timestamp );
-		$checkBox = wfRadio( "mergepoint", $ts, false );
+		$checkBox = Xml::radio( 'mergepoint', $ts, ( $this->mTimestamp === $ts ) );
 
-		$pageLink = $this->sk->makeKnownLinkObj( $rev->getTitle(),
-			htmlspecialchars( $wgLang->timeanddate( $ts ) ), 'oldid=' . $rev->getId() );
-		if( $rev->isDeleted( Revision::DELETED_TEXT ) ) {
+		$user = $this->getUser();
+
+		$pageLink = $linkRenderer->makeKnownLink(
+			$rev->getTitle(),
+			$this->getLanguage()->userTimeAndDate( $ts, $user ),
+			[],
+			[ 'oldid' => $rev->getId() ]
+		);
+		if ( $rev->isDeleted( Revision::DELETED_TEXT ) ) {
 			$pageLink = '<span class="history-deleted">' . $pageLink . '</span>';
 		}
 
 		# Last link
-		if( !$rev->userCan( Revision::DELETED_TEXT ) )
-			$last = $this->message['last'];
-		else if( isset($this->prevId[$row->rev_id]) )
-			$last = $this->sk->makeKnownLinkObj( $rev->getTitle(), $this->message['last'],
-				"diff=" . $row->rev_id . "&oldid=" . $this->prevId[$row->rev_id] );
-
-		$userLink = $this->sk->revUserTools( $rev );
-
-		if(!is_null($size = $row->rev_len)) {
-			$stxt = $this->sk->formatRevisionSize( $size );
+		if ( !$rev->userCan( Revision::DELETED_TEXT, $user ) ) {
+			$last = $this->msg( 'last' )->escaped();
+		} elseif ( isset( $this->prevId[$row->rev_id] ) ) {
+			$last = $linkRenderer->makeKnownLink(
+				$rev->getTitle(),
+				$this->msg( 'last' )->text(),
+				[],
+				[
+					'diff' => $row->rev_id,
+					'oldid' => $this->prevId[$row->rev_id]
+				]
+			);
 		}
-		$comment = $this->sk->revComment( $rev );
 
-		return "<li>$checkBox ($last) $pageLink . . $userLink $stxt $comment</li>";
+		$userLink = Linker::revUserTools( $rev );
+
+		$size = $row->rev_len;
+		if ( !is_null( $size ) ) {
+			$stxt = Linker::formatRevisionSize( $size );
+		}
+		$comment = Linker::revComment( $rev );
+
+		return Html::rawElement( 'li', [],
+			$this->msg( 'mergehistory-revisionrow' )
+				->rawParams( $checkBox, $last, $pageLink, $userLink, $stxt, $comment )->escaped() );
 	}
 
 	/**
-	 * Fetch revision text link if it's available to all users
-	 * @return string
+	 * Actually attempt the history move
+	 *
+	 * @todo if all versions of page A are moved to B and then a user
+	 * tries to do a reverse-merge via the "unmerge" log link, then page
+	 * A will still be a redirect (as it was after the original merge),
+	 * though it will have the old revisions back from before (as expected).
+	 * The user may have to "undo" the redirect manually to finish the "unmerge".
+	 * Maybe this should delete redirects at the target page of merges?
+	 *
+	 * @return bool Success
 	 */
-	function getPageLink( $row, $titleObj, $ts, $target ) {
-		global $wgLang;
-
-		if( !$this->userCan($row, Revision::DELETED_TEXT) ) {
-			return '<span class="history-deleted">' . $wgLang->timeanddate( $ts, true ) . '</span>';
-		} else {
-			$link = $this->sk->makeKnownLinkObj( $titleObj,
-				$wgLang->timeanddate( $ts, true ), "target=$target&timestamp=$ts" );
-			if( $this->isDeleted($row, Revision::DELETED_TEXT) )
-				$link = '<span class="history-deleted">' . $link . '</span>';
-			return $link;
-		}
-	}
-
 	function merge() {
-		global $wgOut, $wgUser;
 		# Get the titles directly from the IDs, in case the target page params
 		# were spoofed. The queries are done based on the IDs, so it's best to
 		# keep it consistent...
 		$targetTitle = Title::newFromID( $this->mTargetID );
 		$destTitle = Title::newFromID( $this->mDestID );
-		if( is_null($targetTitle) || is_null($destTitle) )
+		if ( is_null( $targetTitle ) || is_null( $destTitle ) ) {
 			return false; // validate these
-		if( $targetTitle->getArticleId() == $destTitle->getArticleId() )
-			return false;
-		# Verify that this timestamp is valid
-		# Must be older than the destination page
-		$dbw = wfGetDB( DB_MASTER );
-		# Get timestamp into DB format
-		$this->mTimestamp = $this->mTimestamp ? $dbw->timestamp($this->mTimestamp) : '';
-		# Max timestamp should be min of destination page
-		$maxtimestamp = $dbw->selectField( 'revision', 'MIN(rev_timestamp)',
-			array('rev_page' => $this->mDestID ),
-			__METHOD__ );
-		# Destination page must exist with revisions
-		if( !$maxtimestamp ) {
-			$wgOut->addWikiMsg('mergehistory-fail');
+		}
+		if ( $targetTitle->getArticleID() == $destTitle->getArticleID() ) {
 			return false;
 		}
-		# Get the latest timestamp of the source
-		$lasttimestamp = $dbw->selectField( array('page','revision'),
-			'rev_timestamp',
-			array('page_id' => $this->mTargetID, 'page_latest = rev_id' ),
-			__METHOD__ );
-		# $this->mTimestamp must be older than $maxtimestamp
-		if( $this->mTimestamp >= $maxtimestamp ) {
-			$wgOut->addWikiMsg('mergehistory-fail');
+
+		// MergeHistory object
+		$mh = new MergeHistory( $targetTitle, $destTitle, $this->mTimestamp );
+
+		// Merge!
+		$mergeStatus = $mh->merge( $this->getUser(), $this->mComment );
+		if ( !$mergeStatus->isOK() ) {
+			// Failed merge
+			$this->getOutput()->addWikiMsg( $mergeStatus->getMessage() );
 			return false;
 		}
-		# Update the revisions
-		if( $this->mTimestamp ) {
-			$timewhere = "rev_timestamp <= {$this->mTimestamp}";
-			$TimestampLimit = wfTimestamp(TS_MW,$this->mTimestamp);
-		} else {
-			$timewhere = "rev_timestamp <= {$maxtimestamp}";
-			$TimestampLimit = wfTimestamp(TS_MW,$lasttimestamp);
-		}
-		# Do the moving...
-		$dbw->update( 'revision',
-			array( 'rev_page' => $this->mDestID ),
-			array( 'rev_page' => $this->mTargetID,
-				$timewhere ),
-			__METHOD__ );
 
-		$count = $dbw->affectedRows();
-		# Make the source page a redirect if no revisions are left
-		$haveRevisions = $dbw->selectField( 'revision',
-			'rev_timestamp',
-			array( 'rev_page' => $this->mTargetID  ),
-			__METHOD__,
-			array( 'FOR UPDATE' ) );
-		if( !$haveRevisions ) {
-			if( $this->mComment ) {
-				$comment = wfMsgForContent( 'mergehistory-comment', $targetTitle->getPrefixedText(),
-					$destTitle->getPrefixedText(), $this->mComment );
-			} else {
-				$comment = wfMsgForContent( 'mergehistory-autocomment', $targetTitle->getPrefixedText(),
-					$destTitle->getPrefixedText() );
-			}
-			$mwRedir = MagicWord::get( 'redirect' );
-			$redirectText = $mwRedir->getSynonym( 0 ) . ' [[' . $destTitle->getPrefixedText() . "]]\n";
-			$redirectArticle = new Article( $targetTitle );
-			$redirectRevision = new Revision( array(
-				'page'    => $this->mTargetID,
-				'comment' => $comment,
-				'text'    => $redirectText ) );
-			$redirectRevision->insertOn( $dbw );
-			$redirectArticle->updateRevisionOn( $dbw, $redirectRevision );
+		$linkRenderer = $this->getLinkRenderer();
 
-			# Now, we record the link from the redirect to the new title.
-			# It should have no other outgoing links...
-			$dbw->delete( 'pagelinks', array( 'pl_from' => $this->mDestID ), __METHOD__ );
-			$dbw->insert( 'pagelinks',
-				array(
-					'pl_from'      => $this->mDestID,
-					'pl_namespace' => $destTitle->getNamespace(),
-					'pl_title'     => $destTitle->getDBkey() ),
-				__METHOD__ );
-		} else {
-			$targetTitle->invalidateCache(); // update histories
-		}
-		$destTitle->invalidateCache(); // update histories
-		# Check if this did anything
-		if( !$count ) {
-			$wgOut->addWikiMsg('mergehistory-fail');
-			return false;
-		}
-		# Update our logs
-		$log = new LogPage( 'merge' );
-		$log->addEntry( 'merge', $targetTitle, $this->mComment,
-			array($destTitle->getPrefixedText(),$TimestampLimit) );
+		$targetLink = $linkRenderer->makeLink(
+			$targetTitle,
+			null,
+			[],
+			[ 'redirect' => 'no' ]
+		);
 
-		$wgOut->addHtml( wfMsgExt( 'mergehistory-success', array('parseinline'),
-			$targetTitle->getPrefixedText(), $destTitle->getPrefixedText(), $count ) );
-
-		wfRunHooks( 'ArticleMergeComplete', array( $targetTitle, $destTitle ) );
+		$this->getOutput()->addWikiMsg( $this->msg( 'mergehistory-done' )
+			->rawParams( $targetLink )
+			->params( $destTitle->getPrefixedText() )
+			->numParams( $mh->getMergedRevisionCount() )
+		);
 
 		return true;
 	}
-}
 
-class MergeHistoryPager extends ReverseChronologicalPager {
-	public $mForm, $mConds;
-
-	function __construct( $form, $conds = array(), $source, $dest ) {
-		$this->mForm = $form;
-		$this->mConds = $conds;
-		$this->title = $source;
-		$this->articleID = $source->getArticleID();
-
-		$dbr = wfGetDB( DB_SLAVE );
-		$maxtimestamp = $dbr->selectField( 'revision', 'MIN(rev_timestamp)',
-			array('rev_page' => $dest->getArticleID() ),
-			__METHOD__ );
-		$this->maxTimestamp = $maxtimestamp;
-
-		parent::__construct();
-	}
-
-	function getStartBody() {
-		wfProfileIn( __METHOD__ );
-		# Do a link batch query
-		$this->mResult->seek( 0 );
-		$batch = new LinkBatch();
-		# Give some pointers to make (last) links
-		$this->mForm->prevId = array();
-		while( $row = $this->mResult->fetchObject() ) {
-			$batch->addObj( Title::makeTitleSafe( NS_USER, $row->rev_user_text ) );
-			$batch->addObj( Title::makeTitleSafe( NS_USER_TALK, $row->rev_user_text ) );
-
-			$rev_id = isset($rev_id) ? $rev_id : $row->rev_id;
-			if( $rev_id > $row->rev_id )
-				$this->mForm->prevId[$rev_id] = $row->rev_id;
-			else if( $rev_id < $row->rev_id )
-				$this->mForm->prevId[$row->rev_id] = $rev_id;
-
-			$rev_id = $row->rev_id;
-		}
-
-		$batch->execute();
-		$this->mResult->seek( 0 );
-
-		wfProfileOut( __METHOD__ );
-		return '';
-	}
-
-	function formatRow( $row ) {
-		$block = new Block;
-		return $this->mForm->formatRevisionRow( $row );
-	}
-
-	function getQueryInfo() {
-		$conds = $this->mConds;
-		$conds['rev_page'] = $this->articleID;
-		$conds[] = "rev_timestamp < {$this->maxTimestamp}";
-
-		return array(
-			'tables' => array('revision'),
-			'fields' => array( 'rev_minor_edit', 'rev_timestamp', 'rev_user', 'rev_user_text', 'rev_comment',
-				 'rev_id', 'rev_page', 'rev_text_id', 'rev_len', 'rev_deleted' ),
-			'conds' => $conds
-		);
-	}
-
-	function getIndexField() {
-		return 'rev_timestamp';
+	protected function getGroupName() {
+		return 'pagetools';
 	}
 }

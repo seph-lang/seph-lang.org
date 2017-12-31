@@ -1,69 +1,55 @@
 <?php
-/** Kalmyk (Хальмг)
+/** Kalmyk (хальмг)
+ *
+ * To improve a translation please visit https://translatewiki.net
  *
  * @ingroup Language
  * @file
  *
+ * @author Huuchin
  * @author ОйЛ
  * @author לערי ריינהארט
  */
 
-$namespaceNames = array(
-	NS_MEDIA            => 'Аһар',
-	NS_SPECIAL          => 'Көдлхнə',
-	NS_MAIN             => '',
-	NS_TALK             => 'Ухалвр',
-	NS_USER             => 'Орлцач',
-	NS_USER_TALK        => 'Орлцачна_тускар_ухалвр',
-	# NS_PROJECT set by $wgMetaNamespace
-	NS_PROJECT_TALK     => '$1_тускар_ухалвр',
-	NS_IMAGE            => 'Зург',
-	NS_IMAGE_TALK       => 'Зургин_тускар_ухалвр',
-	NS_MEDIAWIKI        => 'MediaWiki',
-	NS_MEDIAWIKI_TALK   => 'MediaWiki_тускар_ухалвр',
-	NS_TEMPLATE         => 'Зура',
-	NS_TEMPLATE_TALK    => 'Зуран_тускар_ухалвр',
-	NS_HELP             => 'Цəəлһлһн',
-	NS_HELP_TALK        => 'Цəəлһлһин_тускар_ухалвр',
-	NS_CATEGORY         => 'Янз',
-	NS_CATEGORY_TALK    => 'Янзин_тускар_ухалвр',
-);
+$fallback = 'ru';
 
 $fallback8bitEncoding = "windows-1251";
 
-$messages = array(
-'article' => 'Халх',
-'mytalk'  => 'Мини күүндлһн бəəрм',
+$namespaceNames = [
+	NS_MEDIA            => 'Аһар',
+	NS_SPECIAL          => 'Көдлхнә',
+	NS_TALK             => 'Меткән',
+	NS_USER             => 'Демнч',
+	NS_USER_TALK        => 'Демнчна_туск_меткән',
+	NS_PROJECT_TALK     => '$1_туск_меткән',
+	NS_FILE             => 'Боомг',
+	NS_FILE_TALK        => 'Боомгин_туск_меткән',
+	NS_MEDIAWIKI        => 'MediaWiki',
+	NS_MEDIAWIKI_TALK   => 'MediaWiki_туск_меткән',
+	NS_TEMPLATE         => 'Кевләр',
+	NS_TEMPLATE_TALK    => 'Зуран_туск_меткән',
+	NS_HELP             => 'Цәәлһлһн',
+	NS_HELP_TALK        => 'Цәәлһлһин_туск_меткән',
+	NS_CATEGORY         => 'Әәшл',
+	NS_CATEGORY_TALK    => 'Әәшлин_туск_меткән',
+];
 
-'history'          => 'Чикллһнə бүрткл',
-'history_short'    => 'Чикллһнə бүрткл',
-'edit'             => 'Чиклх',
-'talkpage'         => 'Ухалвр',
-'talkpagelinktext' => 'Ухалвр',
-'talk'             => 'Ухалвр',
+$namespaceAliases = [
+	'Көдлхнə'                 => NS_SPECIAL,
+	'Ухалвр'                  => NS_TALK,
+	'Орлцач'                  => NS_USER,
+	'Орлцачна_тускар_ухалвр'  => NS_USER_TALK,
+	'$1_тускар_ухалвр'        => NS_PROJECT_TALK,
+	'Зург'                    => NS_FILE,
+	'Зургин_тускар_ухалвр'    => NS_FILE_TALK,
+	'MediaWiki_тускар_ухалвр' => NS_MEDIAWIKI_TALK,
+	'Зура'     => NS_TEMPLATE,
+	'Зуран_тускар_ухалвр'     => NS_TEMPLATE_TALK,
+	'Цəəлһлһн'                => NS_HELP,
+	'Цəəлһлһин_тускар_ухалвр' => NS_HELP_TALK,
+	'Янз'                     => NS_CATEGORY,
+	'Янзин_тускар_ухалвр'     => NS_CATEGORY_TALK,
+];
 
-# All link text and link target definitions of links into project namespace that get used by other message strings, with the exception of user group pages (see grouppage) and the disambiguation template definition (see disambiguations).
-'mainpage'             => 'Эклц',
-'mainpage-description' => 'Эклц',
-
-# Short words for each namespace, by default used in the namespace tab in monobook
-'nstab-main'     => 'Халх',
-'nstab-user'     => 'Орлцач',
-'nstab-template' => 'Зура',
-'nstab-help'     => 'Цəəлһлһн',
-'nstab-category' => 'Янз',
-
-# Login and logout pages
-'login'         => 'Оруллһн',
-'createaccount' => 'Выль вики-авторлэн регистрациез',
-
-# Preferences page
-'preferences' => 'Дурллһн',
-
-# Image description page
-'filehist-user' => 'Орлцач',
-
-# Contributions
-'mycontris' => 'Мини өгүллһдүд',
-
-);
+// Remove Russian aliases
+$namespaceGenderAliases = [];

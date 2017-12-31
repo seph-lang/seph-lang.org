@@ -1,57 +1,28 @@
 <?php
 /** Akan (Akan)
  *
+ * To improve a translation please visit https://translatewiki.net
+ *
  * @ingroup Language
  * @file
  *
- * @author Natsubee
- * @author Paa.kwesi
  */
 
-$messages = array(
-# User preference toggles
-'tog-underline' => 'Twa lenk nyina ase:',
-
-# Dates
-'sunday'    => 'Kwasiada',
-'monday'    => 'Ɛdwoada',
-'tuesday'   => 'Ɛbenada',
-'wednesday' => 'Wukuada',
-'thursday'  => 'Yawoada',
-'friday'    => 'Efiada',
-'saturday'  => 'Memeneda',
-'january'   => 'Ɔpɛpɔn',
-'february'  => 'Ɔgyefuo',
-'march'     => 'Ɔbenem',
-'april'     => 'Oforisuo',
-'may_long'  => 'Kɔtonimma',
-'june'      => 'Ayɛwohomumu',
-'july'      => 'Kutawonsa',
-'august'    => 'Ɔsannaa',
-'september' => 'Ɛbɔ',
-'october'   => 'Ahinime',
-'november'  => 'Obubuo',
-'december'  => 'Ɔpenimma',
-
-'search'           => 'Hwehwɛ',
-'searchbutton'     => 'Hwehwɛ',
-'go'               => 'Kɔ',
-'searcharticle'    => 'Kɔ',
-'history_short'    => 'Beeme',
-'talkpagelinktext' => 'Kasa',
-'talk'             => 'Kasa',
-'jumptosearch'     => 'hwehwɛ',
-
-# Search results
-'powersearch' => 'Hwehwɛ',
-
-# Preferences page
-'searchresultshead' => 'Hwehwɛ',
-
-# Recent changes
-'hist' => 'beeme',
-
-# Watchlist
-'watch' => 'Hwɛ',
-
-);
+$namespaceNames = [
+	NS_MEDIA            => 'Media',
+	NS_SPECIAL          => 'Soronko',
+	NS_TALK             => 'Nkɔmmɔ',
+	NS_USER             => 'Odwumanyɛni',
+	NS_USER_TALK        => 'Odwumanyɛni_nkɔmmɔbea',
+	NS_PROJECT_TALK     => '$1_nkɔmmɔ',
+	NS_FILE             => 'File',
+	NS_FILE_TALK        => 'File_nkɔmmɔ',
+	NS_MEDIAWIKI        => 'MediaWiki',
+	NS_MEDIAWIKI_TALK   => 'MediaWiki_nkɔmmɔ',
+	NS_TEMPLATE         => 'Nhwɛsode',
+	NS_TEMPLATE_TALK    => 'Nhwɛsode_nkɔmmɔbea',
+	NS_HELP             => 'Boa',
+	NS_HELP_TALK        => 'Mmoa_nkɔmmɔbea',
+	NS_CATEGORY         => 'Nkyekyem',
+	NS_CATEGORY_TALK    => 'Nkyekyem_nkɔmmɔbea',
+];

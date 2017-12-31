@@ -101,7 +101,7 @@ $wgLocalInterwiki   = $wgSitename;
 
 $wgLanguageCode = "en";
 
-$wgProxyKey = "3c928c34b066f4a13a1e8cb03b99456cd0da4d0cc8a2129384341a1f24464ad7";
+$wgProxyKey = "80cf17e71e42ab2e6807030ee5c20c9ddb402719e3b9f15a2c2d574626c1d0bd";
 
 ## Default skin: you can change the default skin. Use the internal symbolic
 ## names, ie 'standard', 'nostalgia', 'cologneblue', 'monobook':
@@ -110,12 +110,12 @@ $wgDefaultSkin = 'monobook';
 ## For attaching licensing metadata to pages, and displaying an
 ## appropriate copyright notice / icon. GNU Free Documentation
 ## License and Creative Commons licenses are supported so far.
-# $wgEnableCreativeCommonsRdf = true;
+$wgEnableCreativeCommonsRdf = true;
 $wgRightsPage = ""; # Set to the title of a wiki page that describes your license/copyright
-$wgRightsUrl = "";
-$wgRightsText = "";
-$wgRightsIcon = "";
-# $wgRightsCode = ""; # Not yet used
+$wgRightsUrl = "http://www.gnu.org/copyleft/fdl.html";
+$wgRightsText = "GNU Free Documentation License 1.2";
+$wgRightsIcon = "${wgScriptPath}/skins/common/images/gnu-fdl.png";
+# $wgRightsCode = "gfdl"; # Not yet used
 
 $wgDiff3 = "";
 
@@ -123,22 +123,22 @@ $wgDiff3 = "";
 # sure that cached pages are cleared.
 $wgCacheEpoch = max( $wgCacheEpoch, gmdate( 'YmdHis', @filemtime( __FILE__ ) ) );
 
-$wgLogo = "https://seph-lang.org/img/sephLogoPieceSmall.png";
-
-#require_once("extensions/SyntaxHighlight_GeSHi/SyntaxHighlight_GeSHi.php");
-require_once("extensions/Mygma.php");
+$wgLogo = "https://seph-lang.org/img/SephLogo.png";
 
 $wgGroupPermissions['*']['edit'] = false;
-$wgGroupPermissions['sysop']['deletebatch'] = true;
 
 $wgSpamRegex = "/\<.*style.*?(display|position|overflow|visibility|height)\s*:.*?>/i";
 
 require_once( "$IP/extensions/ConfirmEdit/ConfirmEdit.php" );
-require_once("$IP/extensions/DeleteBatch/DeleteBatch.php");
-require_once("$IP/extensions/ConfirmAccount/SpecialConfirmAccount.php");
+#require_once("$IP/extensions/ConfirmAccount/SpecialConfirmAccount.php");
 
 $wgUseRealNamesOnly = false;
 $wgAccountRequestMinWords = 0;
 $wgAccountRequestToS = false;
 $wgAccountRequestExtraInfo = false;
 $wgConfirmAccountContact = "ola.bini+sephwiki@gmail.com";
+
+wfLoadSkin( 'MonoBook' );
+wfLoadExtension( 'SyntaxHighlight_GeSHi' );
+#require_once("extensions/SyntaxHighlight_GeSHi/SyntaxHighlight_GeSHi.php");
+#require_once("extensions/Mygma.php");

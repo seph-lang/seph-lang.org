@@ -1,102 +1,60 @@
 <?php
 /** Deitsch (Deitsch)
  *
+ * To improve a translation please visit https://translatewiki.net
+ *
  * @ingroup Language
  * @file
  *
- * @author G - ג
+ * @author Kaganer
+ * @author Krinkle
+ * @author Shirayuki
+ * @author Xqt
  * @author לערי ריינהארט
  */
 
 $fallback = 'de';
 
-$messages = array(
-# Dates
-'sunday'    => 'Sunndaag',
-'monday'    => 'Mundaag',
-'tuesday'   => 'Dinschdaag',
-'wednesday' => 'Mittwoch',
-'thursday'  => 'Dunnerschdaag',
-'friday'    => 'Freidaag',
-'saturday'  => 'Samschdaag',
-'january'   => 'Yenner',
-'february'  => 'Hanning',
-'march'     => 'Matz',
-'april'     => 'Abrill',
-'may_long'  => 'Moi',
-'june'      => 'Yuni',
-'july'      => 'Yuli',
-'august'    => 'Augscht',
-'september' => 'September',
-'october'   => 'Oktower',
-'november'  => 'Nowember',
-'december'  => 'Disember',
-'may'       => 'Moi',
+$namespaceNames = [
+	NS_TALK             => 'Dischbedutt',
+	NS_USER             => 'Yuuser',
+	NS_USER_TALK        => 'Yuuser_Dischbedutt',
+	NS_PROJECT_TALK     => '$1_Dischbedutt',
+	NS_FILE             => 'Feil',
+	NS_FILE_TALK        => 'Feil_Dischbedutt',
+	NS_MEDIAWIKI_TALK   => 'MediaWiki_Dischbedutt',
+	NS_TEMPLATE         => 'Moddel',
+	NS_TEMPLATE_TALK    => 'Moddel_Dischbedutt',
+	NS_HELP             => 'Hilf',
+	NS_HELP_TALK        => 'Hilf_Dischbedutt',
+	NS_CATEGORY         => 'Abdeeling',
+	NS_CATEGORY_TALK    => 'Abdeeling_Dischbedutt',
+];
 
-'mytalk'     => 'Mei Gschwetz-Blatt',
-'navigation' => 'Faahre-Gnepp',
+$namespaceAliases = [
+	# German namespaces
+	'Medium'               => NS_MEDIA,
+	'Spezial'              => NS_SPECIAL,
+	'Diskussion'           => NS_TALK,
+	'Benutzer'             => NS_USER,
+	'Benutzer_Diskussion'  => NS_USER_TALK,
+	'$1_Diskussion'        => NS_PROJECT_TALK,
+	'Datei'                => NS_FILE,
+	'Datei_Diskussion'     => NS_FILE_TALK,
+	'MediaWiki_Diskussion' => NS_MEDIAWIKI_TALK,
+	'Vorlage'              => NS_TEMPLATE,
+	'Vorlage_Diskussion'   => NS_TEMPLATE_TALK,
+	'Hilfe'                => NS_HELP,
+	'Hilfe_Diskussion'     => NS_HELP_TALK,
+	'Kategorie'            => NS_CATEGORY,
+	'Kategorie_Diskussion' => NS_CATEGORY_TALK,
+];
 
-'help'           => 'Hilf',
-'search'         => 'Guuck uff',
-'searchbutton'   => 'Guuck uff',
-'go'             => 'Geh',
-'history'        => "G'schicht",
-'history_short'  => "G'schicht",
-'edit'           => 'ennere / tscheensche',
-'talk'           => 'Gschwetz',
-'otherlanguages' => 'Annere Schprooche',
-'jumptosearch'   => 'guuck uff',
+// Remove German aliases
+$namespaceGenderAliases = [];
 
-# All link text and link target definitions of links into project namespace that get used by other message strings, with the exception of user group pages (see grouppage) and the disambiguation template definition (see disambiguations).
-'mainpage'             => 'Haaptblatt',
-'mainpage-description' => 'Haaptblatt',
-'portal'               => 'Gmeeschafts-Portal',
-'portal-url'           => 'Project:Gmeeschafts-Portal',
-
-# Short words for each namespace, by default used in the namespace tab in monobook
-'nstab-help' => 'Hilf',
-
-# Login and logout pages
-'login'  => 'kumm nei',
-'logout' => 'geh naus',
-
-# Search results
-'powersearch' => 'Guuck uff',
-
-# Preferences page
-'preferences'       => 'paerseenlich Profil',
-'searchresultshead' => 'Guuck uff',
-
-# Recent changes
-'recentchanges' => 'Was mer letscht geduh henn',
-
-# Random page
-'randompage' => 'Ennich Ardickel',
-
-# Miscellaneous special pages
-'move' => 'ziehe',
-
-# Watchlist
-'watchlist'     => 'Mei Watsch-Lischt',
-'watch'         => 'watsche',
-'watchthispage' => 'watsch des Blatt',
-
-# Restrictions (nouns)
-'restriction-edit' => 'ennere / tscheensche',
-'restriction-move' => 'Ziehe',
-
-# Undelete
-'undelete-search-submit' => 'Guuck uff',
-
-'sp-contributions-submit' => 'Guuck uff',
-
-# Block/unblock
-'ipblocklist-submit' => 'Guuck uff',
-
-# Tooltip help for the actions
-'tooltip-p-logo' => 'Haaptblatt',
-
-# Special:NewImages
-'ilsubmit' => 'Guuck uff',
-
-);
+$specialPageAliases = [
+	'Listadmins'                => [ 'Verwalter', 'Administratoren' ],
+	'Listbots'                  => [ 'Waddefresser', 'Bots' ],
+	'Search'                    => [ 'Uffgucke', 'Suche' ],
+];

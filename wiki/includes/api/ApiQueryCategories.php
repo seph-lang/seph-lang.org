@@ -1,11 +1,10 @@
 <?php
-
-/*
+/**
+ *
+ *
  * Created on May 13, 2007
  *
- * API for MediaWiki 1.8+
- *
- * Copyright (C) 2006 Yuri Astrakhan <Firstname><Lastname>@gmail.com
+ * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +18,11 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
-
-if (!defined('MEDIAWIKI')) {
-	// Eclipse helper - will be ignored in production
-	require_once ("ApiQueryBase.php");
-}
 
 /**
  * A query module to enumerate categories the set of pages belong to.
@@ -35,170 +31,202 @@ if (!defined('MEDIAWIKI')) {
  */
 class ApiQueryCategories extends ApiQueryGeneratorBase {
 
-	public function __construct($query, $moduleName) {
-		parent :: __construct($query, $moduleName, 'cl');
+	public function __construct( ApiQuery $query, $moduleName ) {
+		parent::__construct( $query, $moduleName, 'cl' );
 	}
 
 	public function execute() {
 		$this->run();
 	}
 
-	public function executeGenerator($resultPageSet) {
-		$this->run($resultPageSet);
+	public function getCacheMode( $params ) {
+		return 'public';
 	}
 
-	private function run($resultPageSet = null) {
+	public function executeGenerator( $resultPageSet ) {
+		$this->run( $resultPageSet );
+	}
 
-		if ($this->getPageSet()->getGoodTitleCount() == 0)
-			return;	// nothing to do
+	/**
+	 * @param ApiPageSet $resultPageSet
+	 */
+	private function run( $resultPageSet = null ) {
+		if ( $this->getPageSet()->getGoodTitleCount() == 0 ) {
+			return; // nothing to do
+		}
 
 		$params = $this->extractRequestParams();
-		$prop = $params['prop'];
+		$prop = array_flip( (array)$params['prop'] );
+		$show = array_flip( (array)$params['show'] );
 
-		$this->addFields(array (
+		$this->addFields( [
 			'cl_from',
 			'cl_to'
-		));
+		] );
 
-		$fld_sortkey = $fld_timestamp = false;
-		if (!is_null($prop)) {
-			foreach($prop as $p) {
-				switch ($p) {
-					case 'sortkey':
-						$this->addFields('cl_sortkey');
-						$fld_sortkey = true;
-						break;
-					case 'timestamp':
-						$this->addFields('cl_timestamp');
-						$fld_timestamp = true;
-						break;
-					default :
-						ApiBase :: dieDebug(__METHOD__, "Unknown prop=$p");
+		$this->addFieldsIf( [ 'cl_sortkey', 'cl_sortkey_prefix' ], isset( $prop['sortkey'] ) );
+		$this->addFieldsIf( 'cl_timestamp', isset( $prop['timestamp'] ) );
+
+		$this->addTables( 'categorylinks' );
+		$this->addWhereFld( 'cl_from', array_keys( $this->getPageSet()->getGoodTitles() ) );
+		if ( !is_null( $params['categories'] ) ) {
+			$cats = [];
+			foreach ( $params['categories'] as $cat ) {
+				$title = Title::newFromText( $cat );
+				if ( !$title || $title->getNamespace() != NS_CATEGORY ) {
+					$this->addWarning( [ 'apiwarn-invalidcategory', wfEscapeWikiText( $cat ) ] );
+				} else {
+					$cats[] = $title->getDBkey();
 				}
+			}
+			$this->addWhereFld( 'cl_to', $cats );
+		}
+
+		if ( !is_null( $params['continue'] ) ) {
+			$cont = explode( '|', $params['continue'] );
+			$this->dieContinueUsageIf( count( $cont ) != 2 );
+			$op = $params['dir'] == 'descending' ? '<' : '>';
+			$clfrom = intval( $cont[0] );
+			$clto = $this->getDB()->addQuotes( $cont[1] );
+			$this->addWhere(
+				"cl_from $op $clfrom OR " .
+				"(cl_from = $clfrom AND " .
+				"cl_to $op= $clto)"
+			);
+		}
+
+		if ( isset( $show['hidden'] ) && isset( $show['!hidden'] ) ) {
+			$this->dieWithError( 'apierror-show' );
+		}
+		if ( isset( $show['hidden'] ) || isset( $show['!hidden'] ) || isset( $prop['hidden'] ) ) {
+			$this->addOption( 'STRAIGHT_JOIN' );
+			$this->addTables( [ 'page', 'page_props' ] );
+			$this->addFieldsIf( 'pp_propname', isset( $prop['hidden'] ) );
+			$this->addJoinConds( [
+				'page' => [ 'LEFT JOIN', [
+					'page_namespace' => NS_CATEGORY,
+					'page_title = cl_to' ] ],
+				'page_props' => [ 'LEFT JOIN', [
+					'pp_page=page_id',
+					'pp_propname' => 'hiddencat' ] ]
+			] );
+			if ( isset( $show['hidden'] ) ) {
+				$this->addWhere( [ 'pp_propname IS NOT NULL' ] );
+			} elseif ( isset( $show['!hidden'] ) ) {
+				$this->addWhere( [ 'pp_propname IS NULL' ] );
 			}
 		}
 
-		$this->addTables('categorylinks');
-		$this->addWhereFld('cl_from', array_keys($this->getPageSet()->getGoodTitles()));
-		if(!is_null($params['continue'])) {
-			$cont = explode('|', $params['continue']);
-			if(count($cont) != 2)
-				$this->dieUsage("Invalid continue param. You should pass the " .
-					"original value returned by the previous query", "_badcontinue");
-			$clfrom = intval($cont[0]);
-			$clto = $this->getDb()->strencode($this->titleToKey($cont[1]));
-			$this->addWhere("cl_from > $clfrom OR ".
-					"(cl_from = $clfrom AND ".
-					"cl_to >= '$clto')");
-		}
-		# Don't order by cl_from if it's constant in the WHERE clause
-		if(count($this->getPageSet()->getGoodTitles()) == 1)
-			$this->addOption('ORDER BY', 'cl_to');
-		else
-			$this->addOption('ORDER BY', "cl_from, cl_to");
-
-		$db = $this->getDB();
-		$res = $this->select(__METHOD__);
-
-		if (is_null($resultPageSet)) {
-
-			$data = array();
-			$lastId = 0;	// database has no ID 0
-			$count = 0;
-			while ($row = $db->fetchObject($res)) {
-				if (++$count > $params['limit']) {
-					// We've reached the one extra which shows that
-					// there are additional pages to be had. Stop here...
-					$this->setContinueEnumParameter('continue', $row->cl_from .
-							'|' . $this->keyToTitle($row->cl_to));
-					break;
-				}
-				if ($lastId != $row->cl_from) {
-					if($lastId != 0) {
-						$this->addPageSubItems($lastId, $data);
-						$data = array();
-					}
-					$lastId = $row->cl_from;
-				}
-
-				$title = Title :: makeTitle(NS_CATEGORY, $row->cl_to);
-
-				$vals = array();
-				ApiQueryBase :: addTitleInfo($vals, $title);
-				if ($fld_sortkey)
-					$vals['sortkey'] = $row->cl_sortkey;
-				if ($fld_timestamp)
-					$vals['timestamp'] = $row->cl_timestamp;
-
-				$data[] = $vals;
-			}
-
-			if($lastId != 0) {
-				$this->addPageSubItems($lastId, $data);
-			}
-
+		$sort = ( $params['dir'] == 'descending' ? ' DESC' : '' );
+		// Don't order by cl_from if it's constant in the WHERE clause
+		if ( count( $this->getPageSet()->getGoodTitles() ) == 1 ) {
+			$this->addOption( 'ORDER BY', 'cl_to' . $sort );
 		} else {
+			$this->addOption( 'ORDER BY', [
+				'cl_from' . $sort,
+				'cl_to' . $sort
+			] );
+		}
 
-			$titles = array();
-			while ($row = $db->fetchObject($res)) {
-				if (++$count > $params['limit']) {
+		$res = $this->select( __METHOD__ );
+
+		$count = 0;
+		if ( is_null( $resultPageSet ) ) {
+			foreach ( $res as $row ) {
+				if ( ++$count > $params['limit'] ) {
 					// We've reached the one extra which shows that
 					// there are additional pages to be had. Stop here...
-					$this->setContinueEnumParameter('continue', $row->cl_from .
-							'|' . $this->keyToTitle($row->cl_to));
+					$this->setContinueEnumParameter( 'continue', $row->cl_from . '|' . $row->cl_to );
 					break;
 				}
 
-				$titles[] = Title :: makeTitle(NS_CATEGORY, $row->cl_to);
-			}
-			$resultPageSet->populateFromTitles($titles);
-		}
+				$title = Title::makeTitle( NS_CATEGORY, $row->cl_to );
+				$vals = [];
+				ApiQueryBase::addTitleInfo( $vals, $title );
+				if ( isset( $prop['sortkey'] ) ) {
+					$vals['sortkey'] = bin2hex( $row->cl_sortkey );
+					$vals['sortkeyprefix'] = $row->cl_sortkey_prefix;
+				}
+				if ( isset( $prop['timestamp'] ) ) {
+					$vals['timestamp'] = wfTimestamp( TS_ISO_8601, $row->cl_timestamp );
+				}
+				if ( isset( $prop['hidden'] ) ) {
+					$vals['hidden'] = !is_null( $row->pp_propname );
+				}
 
-		$db->freeResult($res);
+				$fit = $this->addPageSubItem( $row->cl_from, $vals );
+				if ( !$fit ) {
+					$this->setContinueEnumParameter( 'continue', $row->cl_from . '|' . $row->cl_to );
+					break;
+				}
+			}
+		} else {
+			$titles = [];
+			foreach ( $res as $row ) {
+				if ( ++$count > $params['limit'] ) {
+					// We've reached the one extra which shows that
+					// there are additional pages to be had. Stop here...
+					$this->setContinueEnumParameter( 'continue', $row->cl_from . '|' . $row->cl_to );
+					break;
+				}
+
+				$titles[] = Title::makeTitle( NS_CATEGORY, $row->cl_to );
+			}
+			$resultPageSet->populateFromTitles( $titles );
+		}
 	}
 
 	public function getAllowedParams() {
-		return array (
-			'prop' => array (
-				ApiBase :: PARAM_ISMULTI => true,
-				ApiBase :: PARAM_TYPE => array (
+		return [
+			'prop' => [
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_TYPE => [
 					'sortkey',
 					'timestamp',
-				)
-			),
-			'limit' => array(
-				ApiBase :: PARAM_DFLT => 10,
-				ApiBase :: PARAM_TYPE => 'limit',
-				ApiBase :: PARAM_MIN => 1,
-				ApiBase :: PARAM_MAX => ApiBase :: LIMIT_BIG1,
-				ApiBase :: PARAM_MAX2 => ApiBase :: LIMIT_BIG2
-			),
-			'continue' => null,
-		);
+					'hidden',
+				],
+				ApiBase::PARAM_HELP_MSG_PER_VALUE => [],
+			],
+			'show' => [
+				ApiBase::PARAM_ISMULTI => true,
+				ApiBase::PARAM_TYPE => [
+					'hidden',
+					'!hidden',
+				]
+			],
+			'limit' => [
+				ApiBase::PARAM_DFLT => 10,
+				ApiBase::PARAM_TYPE => 'limit',
+				ApiBase::PARAM_MIN => 1,
+				ApiBase::PARAM_MAX => ApiBase::LIMIT_BIG1,
+				ApiBase::PARAM_MAX2 => ApiBase::LIMIT_BIG2
+			],
+			'continue' => [
+				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+			],
+			'categories' => [
+				ApiBase::PARAM_ISMULTI => true,
+			],
+			'dir' => [
+				ApiBase::PARAM_DFLT => 'ascending',
+				ApiBase::PARAM_TYPE => [
+					'ascending',
+					'descending'
+				]
+			],
+		];
 	}
 
-	public function getParamDescription() {
-		return array (
-			'prop' => 'Which additional properties to get for each category.',
-			'limit' => 'How many categories to return',
-			'continue' => 'When more results are available, use this to continue',
-		);
+	protected function getExamplesMessages() {
+		return [
+			'action=query&prop=categories&titles=Albert%20Einstein'
+				=> 'apihelp-query+categories-example-simple',
+			'action=query&generator=categories&titles=Albert%20Einstein&prop=info'
+				=> 'apihelp-query+categories-example-generator',
+		];
 	}
 
-	public function getDescription() {
-		return 'List all categories the page(s) belong to';
-	}
-
-	protected function getExamples() {
-		return array (
-				"Get a list of categories [[Albert Einstein]] belongs to:",
-				"  api.php?action=query&prop=categories&titles=Albert%20Einstein",
-				"Get information about all categories used in the [[Albert Einstein]]:",
-				"  api.php?action=query&generator=categories&titles=Albert%20Einstein&prop=info"
-			);
-	}
-
-	public function getVersion() {
-		return __CLASS__ . ': $Id: ApiQueryCategories.php 37909 2008-07-22 13:26:15Z catrope $';
+	public function getHelpUrls() {
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Categories';
 	}
 }
