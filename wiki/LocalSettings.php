@@ -123,7 +123,7 @@ $wgDiff3 = "";
 # sure that cached pages are cleared.
 $wgCacheEpoch = max( $wgCacheEpoch, gmdate( 'YmdHis', @filemtime( __FILE__ ) ) );
 
-$wgLogo = "https://seph-lang.org/img/sephLogo.png";
+$wgLogo = "https://seph-lang.org/img/sephLogoPieceSmall.png";
 
 $wgGroupPermissions['*']['edit'] = false;
 
