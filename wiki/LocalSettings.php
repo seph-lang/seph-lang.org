@@ -43,6 +43,7 @@ $wgSitename         = "SephWiki";
 ## http://www.mediawiki.org/wiki/Manual:Short_URL
 $wgScriptPath       = "/wiki";
 $wgScriptExtension  = ".php";
+$wgServer           = "https://seph-lang.org";
 
 ## UPO means: this is also a user preference option
 
