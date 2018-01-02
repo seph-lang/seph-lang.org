@@ -126,7 +126,10 @@ $wgCacheEpoch = max( $wgCacheEpoch, gmdate( 'YmdHis', @filemtime( __FILE__ ) ) )
 
 $wgLogo = "https://seph-lang.org/img/sephLogoPieceSmall.png";
 
+$wgGroupPermissions['*']['createaccount'] = false;
 $wgGroupPermissions['*']['edit'] = false;
+$wgGroupPermissions['user']['edit'] = false;
+$wgGroupPermissions['sysop']['edit'] = true;
 
 $wgSpamRegex = "/\<.*style.*?(display|position|overflow|visibility|height)\s*:.*?>/i";
 
